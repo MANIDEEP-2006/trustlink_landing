@@ -167,13 +167,9 @@ export default function Home() {
       <nav className="fixed top-0 w-full z-50 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <div className="flex items-center gap-2">
-            <motion.div
-              className="w-10 h-10 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-lg flex items-center justify-center"
-              animate={{ rotate: 360 }}
-              transition={{ duration: 20, repeat: Infinity }}
-            >
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
               <Shield className="w-6 h-6 text-white" />
-            </motion.div>
+            </div>
             <span className="text-xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">TrustLink</span>
           </div>
           <div className="hidden md:flex gap-8 items-center">
@@ -296,13 +292,9 @@ export default function Home() {
                   <div className={`absolute inset-0 bg-gradient-to-br ${feature.gradient} rounded-2xl blur-xl opacity-0 group-hover:opacity-75 transition-opacity duration-300`} />
                   <Card className={`relative group hover:shadow-2xl transition-all duration-300 overflow-hidden border-0 bg-gradient-to-br ${feature.bgGradient} backdrop-blur-sm`}>
                     <div className={`relative h-48 overflow-hidden bg-gradient-to-br ${feature.gradient}`}>
-                      <motion.div
-                        className="absolute inset-0 opacity-30"
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                      >
+                      <div className="absolute inset-0 opacity-30">
                         <div className="w-full h-full bg-gradient-to-br from-white/20 to-transparent" />
-                      </motion.div>
+                      </div>
                       <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
                     </div>
                     <div className="p-6">
