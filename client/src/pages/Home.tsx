@@ -1,10 +1,16 @@
+import { useAuth } from "@/_core/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { motion } from "framer-motion";
 import { CheckCircle2, ArrowRight, Shield, Zap, Lock, BarChart3, FileText, Smartphone } from "lucide-react";
 import { useEffect, useState } from "react";
+import { useLocation } from "wouter";
 
 export default function Home() {
+  // The userAuth hooks provides authentication state
+  // To implement login/logout functionality, simply call logout() or redirect to getLoginUrl()
+  let { user, loading, error, isAuthenticated, logout } = useAuth();
+
   const [scrollY, setScrollY] = useState(0);
 
   useEffect(() => {
@@ -13,8 +19,10 @@ export default function Home() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const [, setLocation] = useLocation();
+
   const handleStartVerification = () => {
-    window.location.href = 'http://localhost:5000/verify/start';
+    setLocation('/verify/start');
   };
 
   const handleLearnMore = () => {
@@ -22,11 +30,11 @@ export default function Home() {
   };
 
   const handleLaunchApp = () => {
-    window.location.href = 'http://localhost:5000/dashboard';
+    setLocation('/dashboard');
   };
 
   const handleFreeTrial = () => {
-    window.location.href = 'http://localhost:5000/auth/register';
+    setLocation('/register');
   };
 
   const handleScheduleDemo = () => {
