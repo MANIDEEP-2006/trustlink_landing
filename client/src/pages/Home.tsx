@@ -14,7 +14,7 @@ export default function Home() {
   }, []);
 
   const handleStartVerification = () => {
-    window.location.href = '/verify/start';
+    window.location.href = 'http://localhost:5000/verify/start';
   };
 
   const handleLearnMore = () => {
@@ -22,11 +22,11 @@ export default function Home() {
   };
 
   const handleLaunchApp = () => {
-    window.location.href = '/dashboard';
+    window.location.href = 'http://localhost:5000/dashboard';
   };
 
   const handleFreeTrial = () => {
-    window.location.href = '/auth/register';
+    window.location.href = 'http://localhost:5000/auth/register';
   };
 
   const handleScheduleDemo = () => {
