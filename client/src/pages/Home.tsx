@@ -13,6 +13,26 @@ export default function Home() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const handleStartVerification = () => {
+    window.location.href = '/verify/start';
+  };
+
+  const handleLearnMore = () => {
+    document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleLaunchApp = () => {
+    window.location.href = '/dashboard';
+  };
+
+  const handleFreeTrial = () => {
+    window.location.href = '/auth/register';
+  };
+
+  const handleScheduleDemo = () => {
+    window.open('mailto:support@trustlink.com?subject=Schedule%20Demo', '_blank');
+  };
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -87,7 +107,7 @@ export default function Home() {
             <a href="#benefits" className="text-foreground hover:text-[#0F3460] transition">Benefits</a>
             <a href="#cta" className="text-foreground hover:text-[#0F3460] transition">Get Started</a>
           </div>
-          <Button className="bg-gradient-to-r from-[#0F3460] to-[#6A0572] text-white hover:shadow-lg transition-all">
+          <Button onClick={handleLaunchApp} className="bg-gradient-to-r from-[#0F3460] to-[#6A0572] text-white hover:shadow-lg transition-all">
             Launch App
           </Button>
         </div>
@@ -127,10 +147,10 @@ export default function Home() {
                 Experience the future of identity verification with AI-powered OCR, biometric face matching, and advanced fraud detection. Secure, fast, and reliable.
               </p>
               <div className="flex gap-4">
-                <Button size="lg" className="bg-gradient-to-r from-[#0F3460] to-[#6A0572] text-white hover:shadow-xl transition-all">
+                <Button onClick={handleStartVerification} size="lg" className="bg-gradient-to-r from-[#0F3460] to-[#6A0572] text-white hover:shadow-xl transition-all">
                   Start Verification <ArrowRight className="ml-2 w-4 h-4" />
                 </Button>
-                <Button size="lg" variant="outline" className="border-2 border-[#00D9FF] text-[#0F3460] hover:bg-[#00D9FF]/10">
+                <Button onClick={handleLearnMore} size="lg" variant="outline" className="border-2 border-[#00D9FF] text-[#0F3460] hover:bg-[#00D9FF]/10">
                   Learn More
                 </Button>
               </div>
@@ -360,10 +380,10 @@ export default function Home() {
               Join thousands of organizations using TrustLink for secure and efficient identity verification
             </motion.p>
             <motion.div variants={itemVariants} className="flex gap-4 justify-center flex-wrap">
-              <Button size="lg" className="bg-white text-[#0F3460] hover:bg-white/90 font-semibold">
+              <Button onClick={handleFreeTrial} size="lg" className="bg-white text-[#0F3460] hover:bg-white/90 font-semibold">
                 Start Free Trial <ArrowRight className="ml-2 w-4 h-4" />
               </Button>
-              <Button size="lg" variant="outline" className="border-2 border-white text-white hover:bg-white/10">
+              <Button onClick={handleScheduleDemo} size="lg" variant="outline" className="border-2 border-white text-white hover:bg-white/10">
                 Schedule Demo
               </Button>
             </motion.div>
