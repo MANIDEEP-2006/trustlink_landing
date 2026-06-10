@@ -19,6 +19,7 @@ import {
   Loader,
   Search,
   X as XIcon,
+  Download,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
@@ -79,6 +80,45 @@ export default function AdminDashboard() {
   const handleLogout = async () => {
     await logout();
     setLocation("/");
+  };
+
+  const exportToCSV = () => {
+    const data = searchQuery ? filteredVerifications : verificationsData?.data || [];
+    if (!data || data.length === 0) {
+      toast.error("No data to export");
+      return;
+    }
+
+    // Prepare CSV headers
+    const headers = ["Verification Code", "User ID", "Status", "Trust Score", "Date"];
+    
+    // Prepare CSV rows
+    const rows = data.map((v: any) => [
+      v.verificationCode,
+      v.userId,
+      v.status,
+      v.trustScore,
+      new Date(v.completedAt).toLocaleDateString(),
+    ]);
+
+    // Create CSV content
+    const csvContent = [
+      headers.join(","),
+      ...rows.map((row: any[]) => row.map((cell: any) => `"${cell}"`).join(",")),
+    ].join("\n");
+
+
+    // Create blob and download
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute("download", `verifications-${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    toast.success(`Exported ${data.length} records to CSV`);
   };
 
   const containerVariants = {
@@ -327,6 +367,15 @@ export default function AdminDashboard() {
               >
                 <div className="flex justify-between items-center">
                   <h1 className="text-3xl font-bold text-white">All Verifications</h1>
+                  <motion.button
+                    onClick={() => exportToCSV()}
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white rounded-lg font-semibold transition-all"
+                  >
+                    <Download className="w-4 h-4" />
+                    Export CSV
+                  </motion.button>
                 </div>
 
                 {/* Search Bar */}
