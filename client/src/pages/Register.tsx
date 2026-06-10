@@ -78,177 +78,273 @@ export default function Register() {
     setLocation('/');
   };
 
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1,
+        delayChildren: 0.2,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.6 },
+    },
+  };
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950">
+      {/* Animated Background */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          className="absolute top-1/4 right-0 w-96 h-96 bg-gradient-to-r from-violet-600 to-purple-600 rounded-full blur-3xl opacity-20"
+          animate={{
+            x: [0, 50, 0],
+            y: [0, 100, 0],
+            scale: [1, 1.3, 1],
+          }}
+          transition={{ duration: 8, repeat: Infinity }}
+        />
+        <motion.div
+          className="absolute bottom-1/4 left-0 w-96 h-96 bg-gradient-to-r from-fuchsia-600 to-pink-600 rounded-full blur-3xl opacity-20"
+          animate={{
+            x: [0, -50, 0],
+            y: [0, -100, 0],
+            scale: [1.2, 1, 1.2],
+          }}
+          transition={{ duration: 10, repeat: Infinity }}
+        />
+      </div>
+
       {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-white/80 backdrop-blur-md border-b border-border">
+      <nav className="fixed top-0 w-full z-50 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            <div className="w-10 h-10 bg-gradient-to-br from-[#0F3460] to-[#6A0572] rounded-lg flex items-center justify-center">
+          <motion.div
+            className="flex items-center gap-2"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 20, repeat: Infinity }}
+          >
+            <div className="w-10 h-10 bg-gradient-to-br from-violet-500 via-purple-500 to-fuchsia-500 rounded-lg flex items-center justify-center">
               <Shield className="w-6 h-6 text-white" />
             </div>
-            <span className="text-xl font-bold text-foreground">TrustLink</span>
-          </div>
-          <Button onClick={handleBackHome} variant="ghost">
-            Back to Home
-          </Button>
+            <span className="text-xl font-bold bg-gradient-to-r from-violet-400 via-purple-400 to-fuchsia-400 bg-clip-text text-transparent">
+              TrustLink
+            </span>
+          </motion.div>
+          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+            <Button
+              onClick={handleBackHome}
+              variant="outline"
+              className="border-violet-500 text-violet-400 hover:bg-violet-500/10"
+            >
+              Back to Home
+            </Button>
+          </motion.div>
         </div>
       </nav>
 
       {/* Main Content */}
-      <div className="pt-24 pb-12 flex items-center justify-center min-h-screen">
+      <div className="pt-24 pb-12 flex items-center justify-center min-h-screen relative z-10">
         <div className="container mx-auto px-4 max-w-md">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
           >
             {/* Header */}
-            <div className="text-center mb-8">
-              <h1 className="text-4xl font-bold mb-2 text-foreground">Create Account</h1>
-              <p className="text-muted-foreground">
+            <motion.div className="text-center mb-8" variants={itemVariants}>
+              <h1 className="text-4xl font-bold mb-2 bg-gradient-to-r from-violet-400 to-fuchsia-400 bg-clip-text text-transparent">
+                Create Account
+              </h1>
+              <p className="text-slate-300">
                 Join TrustLink and start verifying identities
               </p>
-            </div>
+            </motion.div>
 
             {/* Form Card */}
-            <Card className="p-8 border-0 bg-white">
-              <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Name Field */}
-                <div>
-                  <label className="block text-sm font-semibold text-foreground mb-2">
-                    Full Name
-                  </label>
-                  <div className="relative">
-                    <User className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
-                    <input
-                      type="text"
-                      name="name"
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      placeholder="John Doe"
-                      className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00D9FF] transition-all ${
-                        errors.name ? "border-red-500" : "border-border"
-                      }`}
-                    />
-                  </div>
-                  {errors.name && (
-                    <p className="text-red-500 text-sm mt-1">{errors.name}</p>
-                  )}
-                </div>
+            <motion.div variants={itemVariants}>
+              <motion.div className="group relative">
+                <div className="absolute inset-0 bg-gradient-to-r from-violet-600 to-fuchsia-600 rounded-2xl blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-300" />
+                <Card className="relative p-8 border-0 bg-gradient-to-br from-violet-50 to-purple-50 backdrop-blur-sm">
+                  <form onSubmit={handleSubmit} className="space-y-6">
+                    {/* Name Field */}
+                    <motion.div variants={itemVariants}>
+                      <label className="block text-sm font-semibold text-slate-800 mb-2">
+                        Full Name
+                      </label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-3 w-5 h-5 text-violet-600" />
+                        <motion.input
+                          type="text"
+                          name="name"
+                          value={formData.name}
+                          onChange={handleInputChange}
+                          placeholder="John Doe"
+                          whileFocus={{ scale: 1.02 }}
+                          className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 transition-all ${
+                            errors.name ? "border-red-500" : "border-violet-200"
+                          }`}
+                        />
+                      </div>
+                      {errors.name && (
+                        <motion.p
+                          className="text-red-600 text-sm mt-1"
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                        >
+                          {errors.name}
+                        </motion.p>
+                      )}
+                    </motion.div>
 
-                {/* Email Field */}
-                <div>
-                  <label className="block text-sm font-semibold text-foreground mb-2">
-                    Email Address
-                  </label>
-                  <div className="relative">
-                    <Mail className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
-                    <input
-                      type="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      placeholder="john@example.com"
-                      className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00D9FF] transition-all ${
-                        errors.email ? "border-red-500" : "border-border"
-                      }`}
-                    />
-                  </div>
-                  {errors.email && (
-                    <p className="text-red-500 text-sm mt-1">{errors.email}</p>
-                  )}
-                </div>
+                    {/* Email Field */}
+                    <motion.div variants={itemVariants}>
+                      <label className="block text-sm font-semibold text-slate-800 mb-2">
+                        Email Address
+                      </label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-3 w-5 h-5 text-violet-600" />
+                        <motion.input
+                          type="email"
+                          name="email"
+                          value={formData.email}
+                          onChange={handleInputChange}
+                          placeholder="john@example.com"
+                          whileFocus={{ scale: 1.02 }}
+                          className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 transition-all ${
+                            errors.email ? "border-red-500" : "border-violet-200"
+                          }`}
+                        />
+                      </div>
+                      {errors.email && (
+                        <motion.p
+                          className="text-red-600 text-sm mt-1"
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                        >
+                          {errors.email}
+                        </motion.p>
+                      )}
+                    </motion.div>
 
-                {/* Password Field */}
-                <div>
-                  <label className="block text-sm font-semibold text-foreground mb-2">
-                    Password
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
-                    <input
-                      type="password"
-                      name="password"
-                      value={formData.password}
-                      onChange={handleInputChange}
-                      placeholder="••••••••"
-                      className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00D9FF] transition-all ${
-                        errors.password ? "border-red-500" : "border-border"
-                      }`}
-                    />
-                  </div>
-                  {errors.password && (
-                    <p className="text-red-500 text-sm mt-1">{errors.password}</p>
-                  )}
-                </div>
+                    {/* Password Field */}
+                    <motion.div variants={itemVariants}>
+                      <label className="block text-sm font-semibold text-slate-800 mb-2">
+                        Password
+                      </label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-3 w-5 h-5 text-violet-600" />
+                        <motion.input
+                          type="password"
+                          name="password"
+                          value={formData.password}
+                          onChange={handleInputChange}
+                          placeholder="••••••••"
+                          whileFocus={{ scale: 1.02 }}
+                          className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 transition-all ${
+                            errors.password ? "border-red-500" : "border-violet-200"
+                          }`}
+                        />
+                      </div>
+                      {errors.password && (
+                        <motion.p
+                          className="text-red-600 text-sm mt-1"
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                        >
+                          {errors.password}
+                        </motion.p>
+                      )}
+                    </motion.div>
 
-                {/* Confirm Password Field */}
-                <div>
-                  <label className="block text-sm font-semibold text-foreground mb-2">
-                    Confirm Password
-                  </label>
-                  <div className="relative">
-                    <Lock className="absolute left-3 top-3 w-5 h-5 text-muted-foreground" />
-                    <input
-                      type="password"
-                      name="confirmPassword"
-                      value={formData.confirmPassword}
-                      onChange={handleInputChange}
-                      placeholder="••••••••"
-                      className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00D9FF] transition-all ${
-                        errors.confirmPassword ? "border-red-500" : "border-border"
-                      }`}
-                    />
-                  </div>
-                  {errors.confirmPassword && (
-                    <p className="text-red-500 text-sm mt-1">{errors.confirmPassword}</p>
-                  )}
-                </div>
+                    {/* Confirm Password Field */}
+                    <motion.div variants={itemVariants}>
+                      <label className="block text-sm font-semibold text-slate-800 mb-2">
+                        Confirm Password
+                      </label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-3 w-5 h-5 text-violet-600" />
+                        <motion.input
+                          type="password"
+                          name="confirmPassword"
+                          value={formData.confirmPassword}
+                          onChange={handleInputChange}
+                          placeholder="••••••••"
+                          whileFocus={{ scale: 1.02 }}
+                          className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-500 transition-all ${
+                            errors.confirmPassword ? "border-red-500" : "border-violet-200"
+                          }`}
+                        />
+                      </div>
+                      {errors.confirmPassword && (
+                        <motion.p
+                          className="text-red-600 text-sm mt-1"
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                        >
+                          {errors.confirmPassword}
+                        </motion.p>
+                      )}
+                    </motion.div>
 
-                {/* Submit Button */}
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full bg-gradient-to-r from-[#0F3460] to-[#6A0572] text-white hover:shadow-xl transition-all py-3 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {loading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
-                      Creating Account...
-                    </>
-                  ) : (
-                    <>
-                      Create Account <ArrowRight className="ml-2 w-5 h-5" />
-                    </>
-                  )}
-                </Button>
+                    {/* Submit Button */}
+                    <motion.div variants={itemVariants} whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                      <Button
+                        type="submit"
+                        disabled={loading}
+                        className="w-full bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white hover:shadow-2xl hover:shadow-violet-500/50 py-3 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {loading ? (
+                          <>
+                            <motion.div
+                              className="w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"
+                              animate={{ rotate: 360 }}
+                              transition={{ duration: 1, repeat: Infinity }}
+                            />
+                            Creating Account...
+                          </>
+                        ) : (
+                          <>
+                            Create Account <ArrowRight className="ml-2 w-5 h-5" />
+                          </>
+                        )}
+                      </Button>
+                    </motion.div>
 
-                {/* Login Link */}
-                <p className="text-center text-muted-foreground">
-                  Already have an account?{" "}
-                  <button
-                    type="button"
-                    onClick={() => setLocation('/login')}
-                    className="text-[#0F3460] font-semibold hover:text-[#6A0572] transition-colors"
-                  >
-                    Sign in
-                  </button>
-                </p>
-              </form>
-            </Card>
+                    {/* Login Link */}
+                    <motion.p variants={itemVariants} className="text-center text-slate-700">
+                      Already have an account?{" "}
+                      <motion.button
+                        type="button"
+                        onClick={() => setLocation('/login')}
+                        className="text-violet-600 font-semibold hover:text-fuchsia-600 transition-colors"
+                        whileHover={{ scale: 1.05 }}
+                      >
+                        Sign in
+                      </motion.button>
+                    </motion.p>
+                  </form>
+                </Card>
+              </motion.div>
+            </motion.div>
 
             {/* Terms */}
-            <p className="text-center text-xs text-muted-foreground mt-6">
+            <motion.p variants={itemVariants} className="text-center text-xs text-slate-400 mt-6">
               By creating an account, you agree to our{" "}
-              <a href="#" className="text-[#0F3460] hover:underline">
+              <motion.a href="#" className="text-violet-400 hover:underline" whileHover={{ scale: 1.05 }}>
                 Terms of Service
-              </a>{" "}
+              </motion.a>{" "}
               and{" "}
-              <a href="#" className="text-[#0F3460] hover:underline">
+              <motion.a href="#" className="text-violet-400 hover:underline" whileHover={{ scale: 1.05 }}>
                 Privacy Policy
-              </a>
-            </p>
+              </motion.a>
+            </motion.p>
           </motion.div>
         </div>
       </div>

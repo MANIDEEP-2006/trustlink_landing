@@ -16,6 +16,7 @@ export const users = mysqlTable("users", {
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
+  phoneNumber: varchar("phoneNumber", { length: 20 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -41,7 +42,10 @@ export const verifications = mysqlTable("verifications", {
   ocrData: longtext("ocrData"),
   qrCode: text("qrCode"),
   verificationId: varchar("verificationId", { length: 100 }).unique(),
+  verificationCode: varchar("verificationCode", { length: 50 }).unique(),
   notes: text("notes"),
+  validityDays: int("validityDays").default(365),
+  expiresAt: timestamp("expiresAt"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
   completedAt: timestamp("completedAt"),
@@ -155,6 +159,7 @@ export const qrCodes = mysqlTable("qrCodes", {
   userId: int("userId").notNull(),
   qrCodeData: text("qrCodeData").notNull(),
   qrCodeUrl: text("qrCodeUrl"),
+  verificationCode: varchar("verificationCode", { length: 50 }).unique(),
   expiresAt: timestamp("expiresAt"),
   scans: int("scans").default(0),
   lastScannedAt: timestamp("lastScannedAt"),
@@ -196,6 +201,32 @@ export const adminLogs = mysqlTable("adminLogs", {
 
 export type AdminLog = typeof adminLogs.$inferSelect;
 export type InsertAdminLog = typeof adminLogs.$inferInsert;
+
+/**
+ * Verification Lookup table - stores public verification records for QR scanning
+ */
+export const verificationLookup = mysqlTable("verificationLookup", {
+  id: int("id").autoincrement().primaryKey(),
+  verificationId: int("verificationId").notNull(),
+  userId: int("userId").notNull(),
+  verificationCode: varchar("verificationCode", { length: 50 }).unique().notNull(),
+  userName: varchar("userName", { length: 255 }).notNull(),
+  userEmail: varchar("userEmail", { length: 320 }),
+  userPhone: varchar("userPhone", { length: 20 }),
+  status: mysqlEnum("status", ["verified", "rejected", "expired"]).default("verified").notNull(),
+  trustScore: int("trustScore"),
+  documentType: varchar("documentType", { length: 50 }),
+  faceMatchScore: decimal("faceMatchScore", { precision: 5, scale: 2 }),
+  fraudDetected: boolean("fraudDetected").default(false),
+  verifiedAt: timestamp("verifiedAt"),
+  expiresAt: timestamp("expiresAt"),
+  scans: int("scans").default(0),
+  lastScannedAt: timestamp("lastScannedAt"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type VerificationLookup = typeof verificationLookup.$inferSelect;
+export type InsertVerificationLookup = typeof verificationLookup.$inferInsert;
 
 /**
  * Relations
@@ -300,6 +331,17 @@ export const verificationHistoryRelations = relations(verificationHistory, ({ on
 export const adminLogsRelations = relations(adminLogs, ({ one }) => ({
   admin: one(users, {
     fields: [adminLogs.adminId],
+    references: [users.id],
+  }),
+}));
+
+export const verificationLookupRelations = relations(verificationLookup, ({ one }) => ({
+  verification: one(verifications, {
+    fields: [verificationLookup.verificationId],
+    references: [verifications.id],
+  }),
+  user: one(users, {
+    fields: [verificationLookup.userId],
     references: [users.id],
   }),
 }));

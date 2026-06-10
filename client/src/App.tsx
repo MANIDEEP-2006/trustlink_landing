@@ -10,6 +10,7 @@ import VerificationStart from "./pages/VerificationStart";
 import UploadDocument from "./pages/UploadDocument";
 import UploadSelfie from "./pages/UploadSelfie";
 import VerificationResult from "./pages/VerificationResult";
+import VerificationLookup from "./pages/VerificationLookup";
 import Register from "./pages/Register";
 
 function Router() {
@@ -22,7 +23,8 @@ function Router() {
       <Route path={"/verify/start"} component={VerificationStart} />
       <Route path={"/verify/upload-document"} component={UploadDocument} />
       <Route path={"/verify/upload-selfie"} component={UploadSelfie} />
-      <Route path={"/verify/result"} component={VerificationResult} />
+      <Route path={"verify/result"} component={VerificationResult} />
+      <Route path={"verify/lookup"} component={VerificationLookup} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
