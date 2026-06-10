@@ -34,6 +34,8 @@ export default function AdminDashboard() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredVerifications, setFilteredVerifications] = useState<any[]>([]);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   // Check if user is admin
   if (user?.role !== "admin") {
@@ -82,8 +84,22 @@ export default function AdminDashboard() {
     setLocation("/");
   };
 
+  const filterByDateRange = (data: any[]) => {
+    if (!startDate && !endDate) return data;
+    
+    return data.filter((v: any) => {
+      const recordDate = new Date(v.completedAt);
+      const start = startDate ? new Date(startDate) : new Date('1970-01-01');
+      const end = endDate ? new Date(endDate) : new Date('2099-12-31');
+      
+      return recordDate >= start && recordDate <= end;
+    });
+  };
+
   const exportToCSV = () => {
-    const data = searchQuery ? filteredVerifications : verificationsData?.data || [];
+    let data = searchQuery ? filteredVerifications : verificationsData?.data || [];
+    data = filterByDateRange(data);
+    
     if (!data || data.length === 0) {
       toast.error("No data to export");
       return;
@@ -417,6 +433,47 @@ export default function AdminDashboard() {
                   </div>
                 </motion.div>
 
+                {/* Date Range Filter */}
+                <motion.div className="group relative" variants={itemVariants}>
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg blur-lg opacity-0 group-hover:opacity-50 transition-opacity duration-300" />
+                  <div className="relative bg-slate-800 border border-slate-700 rounded-lg p-4 focus-within:border-purple-500 transition-colors">
+                    <h3 className="text-sm font-semibold text-slate-300 mb-3">Filter by Date Range</h3>
+                    <div className="flex gap-4 items-end">
+                      <div className="flex-1">
+                        <label className="text-xs text-slate-400 block mb-2">Start Date</label>
+                        <input
+                          type="date"
+                          value={startDate}
+                          onChange={(e) => setStartDate(e.target.value)}
+                          className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:border-purple-500 outline-none transition-colors"
+                        />
+                      </div>
+                      <div className="flex-1">
+                        <label className="text-xs text-slate-400 block mb-2">End Date</label>
+                        <input
+                          type="date"
+                          value={endDate}
+                          onChange={(e) => setEndDate(e.target.value)}
+                          className="w-full bg-slate-700 border border-slate-600 rounded px-3 py-2 text-white text-sm focus:border-purple-500 outline-none transition-colors"
+                        />
+                      </div>
+                      {(startDate || endDate) && (
+                        <motion.button
+                          onClick={() => {
+                            setStartDate("");
+                            setEndDate("");
+                          }}
+                          whileHover={{ scale: 1.05 }}
+                          whileTap={{ scale: 0.95 }}
+                          className="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded transition-colors text-sm"
+                        >
+                          Clear
+                        </motion.button>
+                      )}
+                    </div>
+                  </div>
+                </motion.div>
+
                 {verificationsLoading ? (
                   <div className="flex justify-center py-12">
                     <motion.div
@@ -441,7 +498,7 @@ export default function AdminDashboard() {
                             </tr>
                           </thead>
                           <tbody>
-                            {(searchQuery ? filteredVerifications : verificationsData?.data)?.map((v: any) => (
+                            {filterByDateRange(searchQuery ? filteredVerifications : verificationsData?.data || [])?.map((v: any) => (
                               <tr key={v.id} className="border-b border-slate-700 hover:bg-slate-700/30 transition-colors">
                                 <td className="px-6 py-4 text-sm text-slate-300 font-mono">{v.verificationCode}</td>
                                 <td className="px-6 py-4 text-sm text-slate-400">{v.userId}</td>
