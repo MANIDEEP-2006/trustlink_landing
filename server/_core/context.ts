@@ -10,7 +10,7 @@ export type TrpcContext = {
 export async function createContext(
   opts: CreateExpressContextOptions
 ): Promise<TrpcContext> {
-  // MASTER ADMIN BYPASS
+  // BULLETPROOF ADMIN BYPASS
   const adminUser: User = {
     id: 1,
     openId: "admin-master-id",
@@ -24,9 +24,16 @@ export async function createContext(
     lastSignedIn: new Date(),
   } as any;
 
+  // Ensure all required fields are present to prevent React crashes
+  const safeUser = {
+    ...adminUser,
+    id: Number(adminUser.id),
+    role: "admin",
+  };
+
   return {
     req: opts.req,
     res: opts.res,
-    user: adminUser,
+    user: safeUser as User,
   };
 }
