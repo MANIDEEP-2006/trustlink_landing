@@ -12,6 +12,7 @@ import UploadSelfie from "./pages/UploadSelfie";
 import VerificationResult from "./pages/VerificationResult";
 import VerificationLookup from "./pages/VerificationLookup";
 import Register from "./pages/Register";
+import AdminDashboard from "./pages/AdminDashboard";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
@@ -23,8 +24,9 @@ function Router() {
       <Route path={"/verify/start"} component={VerificationStart} />
       <Route path={"/verify/upload-document"} component={UploadDocument} />
       <Route path={"/verify/upload-selfie"} component={UploadSelfie} />
-      <Route path={"verify/result"} component={VerificationResult} />
-      <Route path={"verify/lookup"} component={VerificationLookup} />
+      <Route path={"/verify/result"} component={VerificationResult} />
+      <Route path={"/verify/lookup"} component={VerificationLookup} />
+      <Route path={"/admin"} component={AdminDashboard} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
