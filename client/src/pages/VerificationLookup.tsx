@@ -1,43 +1,131 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { motion } from "framer-motion";
-import { Shield, CheckCircle2, AlertCircle, Home, Download, QrCode } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Download, Search, CheckCircle2, XCircle, Clock, Shield } from "lucide-react";
 import { useLocation } from "wouter";
+import { useEffect, useState } from "react";
 import { trpc } from "@/lib/trpc";
+import { toast } from "sonner";
 
 export default function VerificationLookup() {
   const [, setLocation] = useLocation();
-  const [code, setCode] = useState<string>("");
-  const [manualCode, setManualCode] = useState<string>("");
+  const [code, setCode] = useState("");
+  const [searchCode, setSearchCode] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Get verification code from URL
+  // Get code from URL query parameter
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const codeFromUrl = params.get("code");
-    if (codeFromUrl) {
-      setCode(codeFromUrl);
+    const urlCode = params.get("code");
+    if (urlCode) {
+      setSearchCode(urlCode);
+      setCode(urlCode);
     }
   }, []);
 
   // Fetch verification data
-  const { data: verification, isLoading, error } = trpc.verification.lookupByCode.useQuery(
-    { code },
-    { enabled: !!code }
+  const { data: verification, isLoading: isFetching, error } = trpc.verification.lookupByCode.useQuery(
+    { code: searchCode },
+    { enabled: !!searchCode }
   );
 
-  const handleManualLookup = () => {
-    if (manualCode.trim()) {
-      setCode(manualCode);
+  const handleSearch = () => {
+    if (code.trim()) {
+      setSearchCode(code);
+    } else {
+      toast.error("Please enter a verification code");
     }
   };
 
-  const handleDownloadReport = () => {
-    alert("Report download feature coming soon!");
+  const handleDownloadReport = async () => {
+    if (!verification) return;
+
+    try {
+      setIsLoading(true);
+      toast.loading("Generating PDF report...");
+
+      // Create a simple text report for public download
+      const reportContent = `
+================================================================================
+                    TRUSTLINK VERIFICATION REPORT
+================================================================================
+
+VERIFICATION CODE: ${verification.verificationCode}
+STATUS: ${verification.status.toUpperCase()}
+
+================================================================================
+                         USER INFORMATION
+================================================================================
+
+Full Name:      ${verification.userName || "N/A"}
+Email:          ${verification.userEmail || "N/A"}
+Phone Number:   ${verification.userPhone || "N/A"}
+
+================================================================================
+                      VERIFICATION DETAILS
+================================================================================
+
+Document Type:  ${verification.documentType || "N/A"}
+Trust Score:    ${verification.trustScore}%
+Face Match:     ${verification.faceMatchScore ? `${verification.faceMatchScore}%` : "N/A"}
+Fraud Status:   ${verification.fraudDetected ? "⚠ FRAUD DETECTED" : "✓ NO FRAUD DETECTED"}
+
+Verified Date:  ${new Date(verification.verifiedAt || new Date()).toLocaleString()}
+Expiry Date:    ${new Date(verification.expiresAt || new Date()).toLocaleString()}
+
+================================================================================
+                         CERTIFICATION STATUS
+================================================================================
+
+${
+  verification.status === "verified"
+    ? "✓ VERIFIED - This identity has been successfully verified and certified."
+    : verification.status === "expired"
+      ? "⏱ EXPIRED - This verification has expired and is no longer valid."
+      : "✗ REJECTED - This identity verification was rejected."
+}
+
+Generated: ${new Date().toLocaleString()}
+Report ID: ${verification.verificationCode}
+
+================================================================================
+This document certifies the verification status of the above-named individual.
+For verification inquiries, please contact TrustLink support.
+================================================================================
+      `;
+
+      // Create blob and download as text file
+      const element = document.createElement("a");
+      const file = new Blob([reportContent], { type: "text/plain" });
+      element.href = URL.createObjectURL(file);
+      element.download = `TrustLink-Verification-${verification.verificationCode}.txt`;
+      document.body.appendChild(element);
+      element.click();
+      document.body.removeChild(element);
+      URL.revokeObjectURL(element.href);
+
+      toast.success("Report downloaded successfully!");
+    } catch (err) {
+      console.error("Download failed:", err);
+      toast.error("Failed to download report");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleBackHome = () => {
-    setLocation("/");
+  const getStatusIcon = () => {
+    if (!verification) return null;
+
+    switch (verification.status) {
+      case "verified":
+        return <CheckCircle2 className="w-16 h-16 text-green-500" />;
+      case "expired":
+        return <Clock className="w-16 h-16 text-yellow-500" />;
+      case "rejected":
+        return <XCircle className="w-16 h-16 text-red-500" />;
+      default:
+        return <Shield className="w-16 h-16 text-blue-500" />;
+    }
   };
 
   const itemVariants = {
@@ -63,7 +151,7 @@ export default function VerificationLookup() {
           transition={{ duration: 8, repeat: Infinity }}
         />
         <motion.div
-          className="absolute bottom-0 left-1/4 w-96 h-96 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-full blur-3xl opacity-20"
+          className="absolute bottom-0 left-1/4 w-96 h-96 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full blur-3xl opacity-20"
           animate={{
             x: [0, -100, 0],
             y: [0, 100, 0],
@@ -81,75 +169,53 @@ export default function VerificationLookup() {
             animate={{ rotate: 360 }}
             transition={{ duration: 20, repeat: Infinity }}
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-cyan-500 to-teal-500 rounded-lg flex items-center justify-center">
+            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-cyan-500 to-purple-500 rounded-lg flex items-center justify-center">
               <Shield className="w-6 h-6 text-white" />
             </div>
-            <span className="text-xl font-bold bg-gradient-to-r from-blue-400 via-cyan-400 to-teal-400 bg-clip-text text-transparent">
-              TrustLink
+            <span className="text-xl font-bold bg-gradient-to-r from-blue-400 via-cyan-400 to-purple-400 bg-clip-text text-transparent">
+              TrustLink Verify
             </span>
-          </motion.div>
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <Button
-              onClick={handleBackHome}
-              variant="outline"
-              className="border-blue-500 text-blue-400 hover:bg-blue-500/10"
-            >
-              Back to Home
-            </Button>
           </motion.div>
         </div>
       </nav>
 
       {/* Main Content */}
       <div className="pt-24 pb-12 relative z-10">
-        <div className="container mx-auto px-4 max-w-2xl">
-          {/* Header */}
+        <div className="container mx-auto px-4 max-w-3xl">
+          {/* Search Section */}
           <motion.div
-            className="text-center mb-12"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-          >
-            <motion.div className="mb-6 flex justify-center" animate={{ rotate: 360 }} transition={{ duration: 3, repeat: Infinity }}>
-              <QrCode className="w-16 h-16 text-cyan-400" />
-            </motion.div>
-            <h1 className="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-              Verify Identity
-            </h1>
-            <p className="text-slate-300">
-              Scan a QR code or enter a verification code to check certification status
-            </p>
-          </motion.div>
-
-          {/* Manual Code Input */}
-          <motion.div
-            className="mb-8"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.1 }}
+            className="mb-12"
+            variants={itemVariants}
+            initial="hidden"
+            animate="visible"
           >
             <motion.div className="group relative">
               <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-300" />
               <Card className="relative p-8 border-0 bg-gradient-to-br from-blue-50 to-cyan-50 backdrop-blur-sm">
-                <label className="block text-sm font-semibold text-slate-800 mb-4">
-                  Enter Verification Code
-                </label>
-                <div className="flex gap-4">
-                  <motion.input
+                <h1 className="text-4xl font-bold mb-6 bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                  Verify Identity
+                </h1>
+                <p className="text-slate-600 mb-6">
+                  Enter the verification code from the QR code or report to check certification status.
+                </p>
+
+                <div className="flex gap-3">
+                  <input
                     type="text"
-                    value={manualCode}
-                    onChange={(e) => setManualCode(e.target.value)}
-                    placeholder="e.g., VER-XXXXX-XXXXX"
-                    whileFocus={{ scale: 1.02 }}
-                    className="flex-1 px-4 py-3 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-                    onKeyPress={(e) => e.key === "Enter" && handleManualLookup()}
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+                    placeholder="Enter verification code (e.g., VER-XXXX-XXXX)"
+                    className="flex-1 px-4 py-3 rounded-lg border-2 border-blue-200 focus:border-blue-500 focus:outline-none bg-white text-slate-800"
                   />
                   <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
                     <Button
-                      onClick={handleManualLookup}
-                      className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:shadow-2xl hover:shadow-blue-500/50"
+                      onClick={handleSearch}
+                      disabled={isFetching || isLoading}
+                      className="bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:shadow-2xl hover:shadow-blue-500/50 px-6 py-3"
                     >
-                      Search
+                      <Search className="w-5 h-5 mr-2" />
+                      {isFetching ? "Searching..." : "Search"}
                     </Button>
                   </motion.div>
                 </div>
@@ -157,37 +223,41 @@ export default function VerificationLookup() {
             </motion.div>
           </motion.div>
 
-          {/* Loading State */}
-          {isLoading && (
+          {/* Results Section */}
+          {isFetching && (
             <motion.div
               className="text-center py-12"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              variants={itemVariants}
+              initial="hidden"
+              animate="visible"
             >
-              <motion.div
-                className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full mx-auto"
-                animate={{ rotate: 360 }}
-                transition={{ duration: 1, repeat: Infinity }}
-              />
-              <p className="text-slate-300 mt-4">Verifying...</p>
+              <div className="inline-block">
+                <motion.div
+                  animate={{ rotate: 360 }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full"
+                />
+              </div>
+              <p className="text-slate-300 mt-4">Loading verification details...</p>
             </motion.div>
           )}
 
-          {/* Error State */}
           {error && (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              className="mb-8"
+              variants={itemVariants}
+              initial="hidden"
+              animate="visible"
             >
               <motion.div className="group relative">
-                <div className="absolute inset-0 bg-gradient-to-r from-red-600 to-rose-600 rounded-2xl blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-300" />
-                <Card className="relative p-8 border-0 bg-gradient-to-br from-red-50 to-rose-50 backdrop-blur-sm">
-                  <div className="flex gap-4">
-                    <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0" />
+                <div className="absolute inset-0 bg-gradient-to-r from-red-600 to-pink-600 rounded-2xl blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-300" />
+                <Card className="relative p-8 border-0 bg-gradient-to-br from-red-50 to-pink-50 backdrop-blur-sm">
+                  <div className="flex items-center gap-4">
+                    <XCircle className="w-12 h-12 text-red-500 flex-shrink-0" />
                     <div>
-                      <h3 className="font-semibold text-red-800 mb-2">Verification Not Found</h3>
-                      <p className="text-red-700">
-                        The verification code you entered could not be found. Please check the code and try again.
+                      <h2 className="text-2xl font-bold text-red-600 mb-2">Verification Not Found</h2>
+                      <p className="text-slate-600">
+                        The verification code you entered could not be found. Please check and try again.
                       </p>
                     </div>
                   </div>
@@ -196,183 +266,185 @@ export default function VerificationLookup() {
             </motion.div>
           )}
 
-          {/* Verification Result */}
-          {verification && !isLoading && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="space-y-6"
-            >
+          {verification && !isFetching && (
+            <>
               {/* Status Card */}
-              <motion.div className="group relative">
-                <div
-                  className={`absolute inset-0 bg-gradient-to-r ${
+              <motion.div
+                className="mb-8"
+                variants={itemVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                <motion.div className="group relative">
+                  <div className={`absolute inset-0 bg-gradient-to-r ${
                     verification.status === "verified"
                       ? "from-green-600 to-emerald-600"
                       : verification.status === "expired"
                         ? "from-yellow-600 to-orange-600"
-                        : "from-red-600 to-rose-600"
-                  } rounded-2xl blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-300`}
-                />
-                <Card
-                  className={`relative p-8 border-0 bg-gradient-to-br ${
-                    verification.status === "verified"
-                      ? "from-green-50 to-emerald-50"
-                      : verification.status === "expired"
-                        ? "from-yellow-50 to-orange-50"
-                        : "from-red-50 to-rose-50"
-                  } backdrop-blur-sm`}
-                >
-                  <div className="flex items-center gap-4">
-                    <motion.div
-                      animate={{ scale: [1, 1.1, 1] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                    >
-                      {verification.status === "verified" ? (
-                        <CheckCircle2 className="w-12 h-12 text-green-600" />
-                      ) : (
-                        <AlertCircle className="w-12 h-12 text-yellow-600" />
-                      )}
-                    </motion.div>
-                    <div>
-                      <h2 className={`text-2xl font-bold ${
-                        verification.status === "verified"
-                          ? "text-green-800"
-                          : "text-yellow-800"
-                      }`}>
-                        {verification.status === "verified"
-                          ? "Certified & Verified"
-                          : verification.status === "expired"
-                            ? "Certification Expired"
-                            : "Not Verified"}
-                      </h2>
-                      <p className={`text-sm ${
-                        verification.status === "verified"
-                          ? "text-green-700"
-                          : "text-yellow-700"
-                      }`}>
-                        {verification.status === "verified"
-                          ? "This identity has been successfully verified"
-                          : "This verification has expired"}
-                      </p>
-                    </div>
-                  </div>
-                </Card>
-              </motion.div>
-
-              {/* User Information */}
-              <motion.div
-                className="group relative"
-                animate={{ y: [0, -5, 0] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-cyan-600 to-blue-600 rounded-2xl blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-300" />
-                <Card className="relative p-8 border-0 bg-gradient-to-br from-cyan-50 to-blue-50 backdrop-blur-sm">
-                  <h3 className="text-xl font-bold mb-6 bg-gradient-to-r from-cyan-600 to-blue-600 bg-clip-text text-transparent">
-                    User Information
-                  </h3>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center pb-4 border-b border-cyan-200">
-                      <span className="text-slate-600 font-semibold">Name:</span>
-                      <span className="text-slate-800">{verification.userName}</span>
-                    </div>
-                    <div className="flex justify-between items-center pb-4 border-b border-cyan-200">
-                      <span className="text-slate-600 font-semibold">Email:</span>
-                      <span className="text-slate-800">{verification.userEmail || "N/A"}</span>
-                    </div>
-                    <div className="flex justify-between items-center pb-4 border-b border-cyan-200">
-                      <span className="text-slate-600 font-semibold">Phone:</span>
-                      <span className="text-slate-800">{verification.userPhone || "N/A"}</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-600 font-semibold">Verification Code:</span>
-                      <span className="text-slate-800 font-mono text-sm">{verification.verificationCode}</span>
-                    </div>
-                  </div>
-                </Card>
-              </motion.div>
-
-              {/* Verification Details */}
-              <motion.div
-                className="group relative"
-                animate={{ y: [0, -5, 0] }}
-                transition={{ duration: 2, repeat: Infinity, delay: 0.2 }}
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-indigo-600 rounded-2xl blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-300" />
-                <Card className="relative p-8 border-0 bg-gradient-to-br from-purple-50 to-indigo-50 backdrop-blur-sm">
-                  <h3 className="text-xl font-bold mb-6 bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent">
-                    Verification Details
-                  </h3>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center pb-4 border-b border-purple-200">
-                      <span className="text-slate-600 font-semibold">Document Type:</span>
-                      <span className="text-slate-800">{verification.documentType || "N/A"}</span>
-                    </div>
-                    <div className="flex justify-between items-center pb-4 border-b border-purple-200">
-                      <span className="text-slate-600 font-semibold">Trust Score:</span>
-                      <motion.span
-                        className="text-lg font-bold bg-gradient-to-r from-purple-600 to-indigo-600 bg-clip-text text-transparent"
-                        animate={{ scale: [1, 1.05, 1] }}
+                        : "from-red-600 to-pink-600"
+                  } rounded-2xl blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-300`} />
+                  <Card className="relative p-8 border-0 bg-gradient-to-br from-white to-slate-50 backdrop-blur-sm">
+                    <div className="text-center">
+                      <motion.div
+                        className="mb-6 flex justify-center"
+                        animate={{ scale: [1, 1.1, 1] }}
                         transition={{ duration: 2, repeat: Infinity }}
                       >
-                        {verification.trustScore}%
-                      </motion.span>
+                        <div className={`w-24 h-24 bg-gradient-to-br ${
+                          verification.status === "verified"
+                            ? "from-green-500 to-emerald-500"
+                            : verification.status === "expired"
+                              ? "from-yellow-500 to-orange-500"
+                              : "from-red-500 to-pink-500"
+                        } rounded-full flex items-center justify-center shadow-2xl`}>
+                          {getStatusIcon()}
+                        </div>
+                      </motion.div>
+                      <h2 className={`text-4xl font-bold mb-2 ${
+                        verification.status === "verified"
+                          ? "text-green-600"
+                          : verification.status === "expired"
+                            ? "text-yellow-600"
+                            : "text-red-600"
+                      }`}>
+                        {verification.status === "verified"
+                          ? "✓ Verified"
+                          : verification.status === "expired"
+                            ? "⏱ Expired"
+                            : "✗ Rejected"}
+                      </h2>
+                      <p className="text-slate-600 text-lg">
+                        {verification.status === "verified"
+                          ? "This identity has been successfully verified"
+                          : verification.status === "expired"
+                            ? "This verification has expired"
+                            : "This identity verification was rejected"}
+                      </p>
                     </div>
-                    <div className="flex justify-between items-center pb-4 border-b border-purple-200">
-                      <span className="text-slate-600 font-semibold">Face Match:</span>
-                      <span className="text-slate-800">{verification.faceMatchScore || "N/A"}%</span>
-                    </div>
-                    <div className="flex justify-between items-center pb-4 border-b border-purple-200">
-                      <span className="text-slate-600 font-semibold">Fraud Detected:</span>
-                      <span className={verification.fraudDetected ? "text-red-600 font-semibold" : "text-green-600 font-semibold"}>
-                        {verification.fraudDetected ? "Yes" : "No"}
-                      </span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-slate-600 font-semibold">Expires:</span>
-                      <span className="text-slate-800">
-                        {verification.expiresAt
-                          ? new Date(verification.expiresAt).toLocaleDateString()
-                          : "N/A"}
-                      </span>
-                    </div>
-                  </div>
-                </Card>
+                  </Card>
+                </motion.div>
               </motion.div>
 
-              {/* Scan Count */}
+              {/* Details Grid */}
               <motion.div
-                className="text-center text-slate-400 text-sm"
-                animate={{ opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 2, repeat: Infinity }}
+                className="grid md:grid-cols-2 gap-8 mb-8"
+                variants={itemVariants}
+                initial="hidden"
+                animate="visible"
               >
-                This verification has been scanned {verification.scans} times
+                {/* User Information */}
+                <motion.div className="group relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-cyan-600 rounded-2xl blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-300" />
+                  <Card className="relative p-6 border-0 bg-gradient-to-br from-blue-50 to-cyan-50 backdrop-blur-sm">
+                    <h3 className="text-xl font-bold mb-4 bg-gradient-to-r from-blue-600 to-cyan-600 bg-clip-text text-transparent">
+                      User Information
+                    </h3>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-slate-600 text-sm">Full Name</p>
+                        <p className="text-lg font-semibold text-slate-800">{verification.userName}</p>
+                      </div>
+                      <div>
+                        <p className="text-slate-600 text-sm">Email</p>
+                        <p className="text-lg font-semibold text-slate-800">{verification.userEmail || "N/A"}</p>
+                      </div>
+                      <div>
+                        <p className="text-slate-600 text-sm">Phone</p>
+                        <p className="text-lg font-semibold text-slate-800">{verification.userPhone || "N/A"}</p>
+                      </div>
+                    </div>
+                  </Card>
+                </motion.div>
+
+                {/* Verification Details */}
+                <motion.div className="group relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-300" />
+                  <Card className="relative p-6 border-0 bg-gradient-to-br from-purple-50 to-pink-50 backdrop-blur-sm">
+                    <h3 className="text-xl font-bold mb-4 bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent">
+                      Verification Details
+                    </h3>
+                    <div className="space-y-3">
+                      <div>
+                        <p className="text-slate-600 text-sm">Verification Code</p>
+                        <p className="text-lg font-semibold text-slate-800 font-mono">{verification.verificationCode}</p>
+                      </div>
+                      <div>
+                        <p className="text-slate-600 text-sm">Document Type</p>
+                        <p className="text-lg font-semibold text-slate-800">{verification.documentType}</p>
+                      </div>
+                      <div>
+                        <p className="text-slate-600 text-sm">Trust Score</p>
+                        <p className="text-lg font-semibold text-green-600">{verification.trustScore}%</p>
+                      </div>
+                    </div>
+                  </Card>
+                </motion.div>
+              </motion.div>
+
+              {/* Verification Results */}
+              <motion.div
+                className="mb-8"
+                variants={itemVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                <motion.div className="group relative">
+                  <div className="absolute inset-0 bg-gradient-to-r from-amber-600 to-orange-600 rounded-2xl blur-xl opacity-0 group-hover:opacity-50 transition-opacity duration-300" />
+                  <Card className="relative p-6 border-0 bg-gradient-to-br from-amber-50 to-orange-50 backdrop-blur-sm">
+                    <h3 className="text-xl font-bold mb-4 bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
+                      Verification Results
+                    </h3>
+                    <div className="grid md:grid-cols-2 gap-4">
+                      <div>
+                        <p className="text-slate-600 text-sm">Face Match Score</p>
+                        <p className="text-lg font-semibold text-slate-800">
+                          {verification.faceMatchScore ? `${verification.faceMatchScore}%` : "N/A"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-slate-600 text-sm">Fraud Detection</p>
+                        <p className={`text-lg font-semibold ${
+                          verification.fraudDetected ? "text-red-600" : "text-green-600"
+                        }`}>
+                          {verification.fraudDetected ? "⚠ Fraud Detected" : "✓ No Fraud"}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-slate-600 text-sm">Verified Date</p>
+                        <p className="text-lg font-semibold text-slate-800">
+                          {new Date(verification.verifiedAt || new Date()).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-slate-600 text-sm">Expiry Date</p>
+                        <p className="text-lg font-semibold text-slate-800">
+                          {new Date(verification.expiresAt || new Date()).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                </motion.div>
               </motion.div>
 
               {/* Download Button */}
-              <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                <Button
-                  onClick={handleDownloadReport}
-                  className="w-full bg-gradient-to-r from-blue-600 to-cyan-600 text-white hover:shadow-2xl hover:shadow-blue-500/50 py-6"
-                >
-                  <Download className="mr-2 w-5 h-5" />
-                  Download Report
-                </Button>
+              <motion.div
+                className="flex justify-center"
+                variants={itemVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
+                  <Button
+                    onClick={handleDownloadReport}
+                    disabled={isLoading}
+                    className="bg-gradient-to-r from-green-600 to-emerald-600 text-white hover:shadow-2xl hover:shadow-green-500/50 px-8 py-6 text-lg"
+                  >
+                    <Download className="mr-2 w-5 h-5" />
+                    {isLoading ? "Generating..." : "Download Report"}
+                  </Button>
+                </motion.div>
               </motion.div>
-            </motion.div>
-          )}
-
-          {/* Empty State */}
-          {!code && !isLoading && (
-            <motion.div
-              className="text-center py-12"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-            >
-              <p className="text-slate-400">
-                Enter a verification code or scan a QR code to get started
-              </p>
-            </motion.div>
+            </>
           )}
         </div>
       </div>

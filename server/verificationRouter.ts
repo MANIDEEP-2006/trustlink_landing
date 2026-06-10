@@ -11,6 +11,7 @@ import {
   generateVerificationCode,
   calculateExpiryDate,
 } from "./verificationDb";
+import { generateVerificationPDF } from "./pdfGenerator";
 import { TRPCError } from "@trpc/server";
 
 export const verificationRouter = router({
@@ -166,7 +167,7 @@ export const verificationRouter = router({
         });
       }
 
-      // Return report data (PDF generation will be done on client or separate service)
+      // Return report data
       return {
         verificationId: verification.id,
         verificationCode: verification.verificationCode,
@@ -183,5 +184,65 @@ export const verificationRouter = router({
         validityDays: verification.validityDays,
         generatedAt: new Date(),
       };
+    }),
+
+  /**
+   * Download PDF report (protected)
+   * Generates and returns PDF as base64
+   */
+  downloadPDF: protectedProcedure
+    .input(z.object({ verificationId: z.number() }))
+    .query(async ({ ctx, input }) => {
+      const verification = await getVerificationById(input.verificationId);
+
+      if (!verification) {
+        throw new TRPCError({
+          code: "NOT_FOUND",
+          message: "Verification not found",
+        });
+      }
+
+      // Check ownership
+      if (verification.userId !== ctx.user.id) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "You do not have permission to download this report",
+        });
+      }
+
+      try {
+        // Generate PDF with QR code
+        const pdfBuffer = await generateVerificationPDF({
+          verificationId: verification.id,
+          verificationCode: verification.verificationCode || "",
+          userName: ctx.user.name || undefined,
+          userEmail: ctx.user.email || undefined,
+          userPhone: ctx.user.phoneNumber || undefined,
+          documentType: verification.documentType || undefined,
+          trustScore: verification.trustScore || 0,
+          faceMatchScore: verification.faceMatchScore || undefined,
+          fraudDetectionResult: verification.fraudDetectionResult || undefined,
+          status: verification.status || "pending",
+          verifiedAt: verification.completedAt || undefined,
+          expiresAt: verification.expiresAt || undefined,
+          validityDays: verification.validityDays || 365,
+          generatedAt: new Date(),
+        });
+
+        // Convert to base64 for transmission
+        const base64PDF = pdfBuffer.toString("base64");
+
+        return {
+          success: true,
+          pdfBase64: base64PDF,
+          fileName: `TrustLink-Verification-${verification.verificationCode}.pdf`,
+        };
+      } catch (error) {
+        console.error("PDF generation failed:", error);
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Failed to generate PDF report",
+        });
+      }
     }),
 });
