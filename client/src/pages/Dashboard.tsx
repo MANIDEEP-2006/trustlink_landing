@@ -131,18 +131,14 @@ export default function Dashboard() {
       {/* Navigation */}
       <nav className="fixed top-0 w-full z-50 bg-slate-950/80 backdrop-blur-xl border-b border-slate-800">
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-          <motion.div
-            className="flex items-center gap-2"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 20, repeat: Infinity }}
-          >
+          <div className="flex items-center gap-2">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
               <Shield className="w-6 h-6 text-white" />
             </div>
             <span className="text-xl font-bold bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">
               TrustLink
             </span>
-          </motion.div>
+          </div>
           <div className="flex items-center gap-4">
             <span className="text-slate-300">Welcome, {user?.name || "User"}</span>
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>

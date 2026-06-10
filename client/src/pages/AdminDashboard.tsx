@@ -241,7 +241,7 @@ export default function AdminDashboard() {
                 {statsLoading ? (
                   <div className="flex justify-center py-12">
                     <motion.div
-                      animate={{ rotate: 360 }}
+                      
                       transition={{ duration: 2, repeat: Infinity }}
                       className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full"
                     />
@@ -371,7 +371,7 @@ export default function AdminDashboard() {
                 {verificationsLoading ? (
                   <div className="flex justify-center py-12">
                     <motion.div
-                      animate={{ rotate: 360 }}
+                      
                       transition={{ duration: 2, repeat: Infinity }}
                       className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full"
                     />
@@ -435,7 +435,7 @@ export default function AdminDashboard() {
                 {usersLoading ? (
                   <div className="flex justify-center py-12">
                     <motion.div
-                      animate={{ rotate: 360 }}
+                      
                       transition={{ duration: 2, repeat: Infinity }}
                       className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full"
                     />
@@ -495,7 +495,7 @@ export default function AdminDashboard() {
                 {highRiskLoading ? (
                   <div className="flex justify-center py-12">
                     <motion.div
-                      animate={{ rotate: 360 }}
+                      
                       transition={{ duration: 2, repeat: Infinity }}
                       className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full"
                     />

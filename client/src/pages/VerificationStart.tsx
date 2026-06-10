@@ -91,8 +91,7 @@ export default function VerificationStart() {
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <motion.div
             className="flex items-center gap-2"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 20, repeat: Infinity }}
+            
           >
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
               <Shield className="w-6 h-6 text-white" />

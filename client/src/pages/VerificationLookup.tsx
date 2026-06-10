@@ -166,8 +166,7 @@ For verification inquiries, please contact TrustLink support.
         <div className="container mx-auto px-4 py-4 flex justify-between items-center">
           <motion.div
             className="flex items-center gap-2"
-            animate={{ rotate: 360 }}
-            transition={{ duration: 20, repeat: Infinity }}
+            
           >
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 via-cyan-500 to-purple-500 rounded-lg flex items-center justify-center">
               <Shield className="w-6 h-6 text-white" />
@@ -233,7 +232,7 @@ For verification inquiries, please contact TrustLink support.
             >
               <div className="inline-block">
                 <motion.div
-                  animate={{ rotate: 360 }}
+                  
                   transition={{ duration: 2, repeat: Infinity }}
                   className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full"
                 />
