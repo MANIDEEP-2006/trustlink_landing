@@ -3,7 +3,7 @@ import { protectedProcedure, router } from "./_core/trpc";
 import { TRPCError } from "@trpc/server";
 import { getDb } from "./db";
 import { verifications, users } from "../drizzle/schema";
-import { eq, desc, sql } from "drizzle-orm";
+import { eq, desc, sql, or, like } from "drizzle-orm";
 
 /**
  * Admin-only procedure that checks user role
@@ -65,7 +65,7 @@ export const adminRouter = router({
   }),
 
   /**
-   * Get all verifications with filtering and pagination (admin only)
+   * Get all verifications with filtering, search, and pagination (admin only)
    */
   getVerifications: adminProcedure
     .input(
@@ -73,7 +73,10 @@ export const adminRouter = router({
         limit: z.number().default(10),
         offset: z.number().default(0),
         search: z.string().optional(),
+        status: z.enum(["verified", "rejected", "expired", "pending"]).optional(),
         userId: z.number().optional(),
+        sortBy: z.enum(["date", "trustScore", "status"]).default("date"),
+        sortOrder: z.enum(["asc", "desc"]).default("desc"),
       })
     )
     .query(async ({ input }) => {
@@ -81,25 +84,60 @@ export const adminRouter = router({
       if (!db) throw new Error("Database not available");
 
       let query = db.select().from(verifications) as any;
-
-      if (input.userId) {
-        query = query.where(eq(verifications.userId, input.userId));
-      }
-
-      query = query.orderBy(desc(verifications.completedAt));
-      query = query.limit(input.limit).offset(input.offset);
-
-      const data = await query;
-      
-      // Get total count
       let countQuery = db
         .select({ count: sql<number>`count(*)` })
         .from(verifications) as any;
 
+      // Apply filters
+      const conditions = [];
+
       if (input.userId) {
-        countQuery = countQuery.where(eq(verifications.userId, input.userId));
+        conditions.push(eq(verifications.userId, input.userId));
       }
 
+      if (input.status) {
+        conditions.push(eq(verifications.status, input.status as any));
+      }
+
+      if (input.search) {
+        // Search in verification code or document type
+        conditions.push(
+          or(
+            like(verifications.verificationId, `%${input.search}%`),
+            like(verifications.documentType, `%${input.search}%`)
+          )
+        );
+      }
+
+      if (conditions.length > 0) {
+        query = query.where(or(...conditions));
+        countQuery = countQuery.where(or(...conditions));
+      }
+
+      // Apply sorting
+      if (input.sortBy === "trustScore") {
+        query = query.orderBy(
+          input.sortOrder === "desc"
+            ? desc(verifications.trustScore)
+            : verifications.trustScore
+        );
+      } else if (input.sortBy === "status") {
+        query = query.orderBy(
+          input.sortOrder === "desc"
+            ? desc(verifications.status)
+            : verifications.status
+        );
+      } else {
+        query = query.orderBy(
+          input.sortOrder === "desc"
+            ? desc(verifications.completedAt)
+            : verifications.completedAt
+        );
+      }
+
+      query = query.limit(input.limit).offset(input.offset);
+
+      const data = await query;
       const countResult = await countQuery;
       const total = countResult[0]?.count || 0;
 
@@ -108,11 +146,12 @@ export const adminRouter = router({
         total,
         page: Math.floor(input.offset / input.limit) + 1,
         pageSize: input.limit,
+        hasMore: input.offset + input.limit < total,
       };
     }),
 
   /**
-   * Get all users (admin only)
+   * Get all users with search and pagination (admin only)
    */
   getUsers: adminProcedure
     .input(
@@ -120,6 +159,9 @@ export const adminRouter = router({
         limit: z.number().default(10),
         offset: z.number().default(0),
         search: z.string().optional(),
+        role: z.enum(["admin", "user"]).optional(),
+        sortBy: z.enum(["date", "name", "email"]).default("date"),
+        sortOrder: z.enum(["asc", "desc"]).default("desc"),
       })
     )
     .query(async ({ input }) => {
@@ -127,17 +169,52 @@ export const adminRouter = router({
       if (!db) throw new Error("Database not available");
 
       let query = db.select().from(users) as any;
+      let countQuery = db
+        .select({ count: sql<number>`count(*)` })
+        .from(users) as any;
 
-      query = query.orderBy(desc(users.createdAt));
+      // Apply filters
+      const conditions = [];
+
+      if (input.role) {
+        conditions.push(eq(users.role, input.role as any));
+      }
+
+      if (input.search) {
+        // Search in name, email, or phone
+        conditions.push(
+          or(
+            like(users.name, `%${input.search}%`),
+            like(users.email, `%${input.search}%`),
+            like(users.phoneNumber, `%${input.search}%`)
+          )
+        );
+      }
+
+      if (conditions.length > 0) {
+        query = query.where(or(...conditions));
+        countQuery = countQuery.where(or(...conditions));
+      }
+
+      // Apply sorting
+      if (input.sortBy === "name") {
+        query = query.orderBy(
+          input.sortOrder === "desc" ? desc(users.name) : users.name
+        );
+      } else if (input.sortBy === "email") {
+        query = query.orderBy(
+          input.sortOrder === "desc" ? desc(users.email) : users.email
+        );
+      } else {
+        query = query.orderBy(
+          input.sortOrder === "desc" ? desc(users.createdAt) : users.createdAt
+        );
+      }
+
       query = query.limit(input.limit).offset(input.offset);
 
       const data = await query;
-
-      // Get total count
-      const countResult = await db
-        .select({ count: sql<number>`count(*)` })
-        .from(users);
-
+      const countResult = await countQuery;
       const total = countResult[0]?.count || 0;
 
       return {
@@ -145,6 +222,7 @@ export const adminRouter = router({
         total,
         page: Math.floor(input.offset / input.limit) + 1,
         pageSize: input.limit,
+        hasMore: input.offset + input.limit < total,
       };
     }),
 
@@ -250,12 +328,13 @@ export const adminRouter = router({
     }),
 
   /**
-   * Export verifications as CSV data (admin only)
+   * Export verifications as CSV (admin only)
    */
   exportVerifications: adminProcedure
     .input(
       z.object({
-        userId: z.number().optional(),
+        status: z.enum(["verified", "rejected", "expired", "pending"]).optional(),
+        limit: z.number().default(1000),
       })
     )
     .query(async ({ input }) => {
@@ -264,25 +343,39 @@ export const adminRouter = router({
 
       let query = db.select().from(verifications) as any;
 
-      if (input.userId) {
-        query = query.where(eq(verifications.userId, input.userId));
+      if (input.status) {
+        query = query.where(eq(verifications.status, input.status as any));
       }
 
-      const verifs = await query;
+      query = query.limit(input.limit);
+      const data = await query;
 
-      const csvData = verifs.map((v: any) => ({
-        id: v.id,
-        code: v.verificationCode,
-        userId: v.userId,
-        status: v.status,
-        documentType: v.documentType,
-        trustScore: v.trustScore,
-        faceMatchScore: v.faceMatchScore,
-        fraudDetected: v.fraudDetectionResult === "fraud_detected",
-        verifiedAt: v.completedAt?.toISOString(),
-        expiresAt: v.expiresAt?.toISOString(),
-      }));
+      // Convert to CSV format
+      if (data.length === 0) {
+        return { csv: "", count: 0 };
+      }
 
-      return csvData;
+      const headers = Object.keys(data[0]);
+      const csvRows = [
+        headers.join(","),
+        ...data.map((row: any) =>
+          headers
+            .map((header) => {
+              const value = row[header];
+              if (value === null || value === undefined) return "";
+              if (typeof value === "string" && value.includes(",")) {
+                return `"${value}"`;
+              }
+              return value;
+            })
+            .join(",")
+        ),
+      ];
+
+      return {
+        csv: csvRows.join("\n"),
+        count: data.length,
+        timestamp: new Date().toISOString(),
+      };
     }),
 });
