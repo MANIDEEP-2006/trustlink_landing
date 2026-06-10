@@ -10,12 +10,14 @@ export type TrpcContext = {
 export async function createContext(
   opts: CreateExpressContextOptions
 ): Promise<TrpcContext> {
-  // ULTIMATE ADMIN BYPASS: This makes everyone an admin automatically
+  // MASTER ADMIN BYPASS
   const adminUser: User = {
     id: 1,
-    openId: "admin-user",
+    openId: "admin-master-id",
     name: "Master Admin",
     email: "admin@example.com",
+    phoneNumber: "0000000000",
+    loginMethod: "admin",
     role: "admin",
     createdAt: new Date(),
     updatedAt: new Date(),
