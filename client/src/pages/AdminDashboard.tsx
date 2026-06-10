@@ -17,6 +17,8 @@ import {
   XCircle,
   Clock,
   Loader,
+  Search,
+  X as XIcon,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { trpc } from "@/lib/trpc";
@@ -29,6 +31,8 @@ export default function AdminDashboard() {
   const [, setLocation] = useLocation();
   const [activeTab, setActiveTab] = useState<AdminTab>("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredVerifications, setFilteredVerifications] = useState<any[]>([]);
 
   // Check if user is admin
   if (user?.role !== "admin") {
@@ -321,7 +325,48 @@ export default function AdminDashboard() {
                 animate="visible"
                 className="space-y-6"
               >
-                <h1 className="text-3xl font-bold text-white">All Verifications</h1>
+                <div className="flex justify-between items-center">
+                  <h1 className="text-3xl font-bold text-white">All Verifications</h1>
+                </div>
+
+                {/* Search Bar */}
+                <motion.div className="group relative" variants={itemVariants}>
+                  <div className="absolute inset-0 bg-gradient-to-r from-cyan-600 to-blue-600 rounded-lg blur-lg opacity-0 group-hover:opacity-50 transition-opacity duration-300" />
+                  <div className="relative flex items-center gap-2 bg-slate-800 border border-slate-700 rounded-lg px-4 py-3 focus-within:border-cyan-500 transition-colors">
+                    <Search className="w-5 h-5 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Search by verification code, user ID, or status..."
+                      value={searchQuery}
+                      onChange={(e) => {
+                        const query = e.target.value.toLowerCase();
+                        setSearchQuery(query);
+                        if (verificationsData?.data) {
+                          const filtered = verificationsData.data.filter((v: any) =>
+                            v.verificationCode?.toLowerCase().includes(query) ||
+                            v.userId?.toString().includes(query) ||
+                            v.status?.toLowerCase().includes(query)
+                          );
+                          setFilteredVerifications(filtered);
+                        }
+                      }}
+                      className="flex-1 bg-transparent outline-none text-white placeholder-slate-500"
+                    />
+                    {searchQuery && (
+                      <motion.button
+                        onClick={() => {
+                          setSearchQuery("");
+                          setFilteredVerifications([]);
+                        }}
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
+                        className="p-1 hover:bg-slate-700 rounded transition-colors"
+                      >
+                        <XIcon className="w-4 h-4 text-slate-400" />
+                      </motion.button>
+                    )}
+                  </div>
+                </motion.div>
 
                 {verificationsLoading ? (
                   <div className="flex justify-center py-12">
@@ -347,7 +392,7 @@ export default function AdminDashboard() {
                             </tr>
                           </thead>
                           <tbody>
-                            {verificationsData?.data?.map((v: any) => (
+                            {(searchQuery ? filteredVerifications : verificationsData?.data)?.map((v: any) => (
                               <tr key={v.id} className="border-b border-slate-700 hover:bg-slate-700/30 transition-colors">
                                 <td className="px-6 py-4 text-sm text-slate-300 font-mono">{v.verificationCode}</td>
                                 <td className="px-6 py-4 text-sm text-slate-400">{v.userId}</td>
