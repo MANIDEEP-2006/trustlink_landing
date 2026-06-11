@@ -43,13 +43,16 @@ async function startServer() {
     serveStatic(app);
     
     // Catch-all route for SPA in production
-    app.get("*", (_req, res) => {
+    app.get("*", (req, res) => {
       const distPath = path.resolve(import.meta.dirname, "public");
       const indexPath = path.resolve(distPath, "index.html");
+      
       if (fs.existsSync(indexPath)) {
         res.sendFile(indexPath);
       } else {
-        res.status(404).send("Frontend build not found");
+        console.error(`[SPA] Index not found at: ${indexPath}`);
+        console.error(`[SPA] Current dirname: ${import.meta.dirname}`);
+        res.status(404).send(`Frontend build not found. Path: ${indexPath}`);
       }
     });
   }
