@@ -25,6 +25,7 @@ export const systemRouter = router({
         openId: `user-${Date.now()}`,
         name: input.name,
         email: input.email,
+        password: input.password,
         loginMethod: "email",
         role: "user",
       });
