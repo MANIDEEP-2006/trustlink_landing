@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { publicProcedure, router } from "./trpc";
-import { db } from "../db";
+import  db  from "../db";
 import { users } from "../../drizzle/schema";
 
 export const systemRouter = router({
