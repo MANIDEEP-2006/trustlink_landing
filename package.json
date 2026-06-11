@@ -13,8 +13,8 @@
     "db:push": "drizzle-kit generate && drizzle-kit migrate"
   },
   "engines": {
-  "node": ">=22.12.0"
-}
+    "node": ">=22.12.0"
+  },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.693.0",
     "@aws-sdk/s3-request-presigner": "^3.693.0",

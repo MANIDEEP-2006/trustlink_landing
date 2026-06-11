@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { publicProcedure, router } from "./trpc";
-import  db  from "../db";
+import { getDb } from "../db";
 import { users } from "../../drizzle/schema";
 
 export const systemRouter = router({
@@ -15,8 +15,13 @@ export const systemRouter = router({
       password: z.string(),
     }))
     .mutation(async ({ input }) => {
+      const db = await getDb();
+      if (!db) {
+        throw new Error("Database connection not available");
+      }
+
       // Create a real user in the database
-      const [result] = await db.insert(users).values({
+      const result = await db.insert(users).values({
         openId: `user-${Date.now()}`,
         name: input.name,
         email: input.email,
@@ -24,9 +29,7 @@ export const systemRouter = router({
         role: "user",
       });
       
-      // Note: result.insertId is for MySQL
-      const id = (result as any).insertId;
-      
-      return { success: true, id };
+      // Note: result is the insert result
+      return { success: true, message: "User registered successfully" };
     }),
 });
