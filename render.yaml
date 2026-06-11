@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: trustlink-landing
+    env: node
+    plan: free
+    buildCommand: pnpm install && pnpm build
+    startCommand: NODE_ENV=production node dist/index.js
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: trustlink-db
+          property: connectionString
+    autoDeploy: true
+
+databases:
+  - name: trustlink-db
+    engine: mysql
+    version: "8"
+    plan: free
+    initializer:
+      source: migrations
