@@ -43,7 +43,7 @@ export default function Register() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!validateForm()) {
@@ -51,13 +51,37 @@ export default function Register() {
     }
 
     setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+    
+    try {
+      // REAL API CALL
+      const response = await fetch('/api/trpc/system.register?batch=1', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          "0": {
+            json: {
+              name: formData.name,
+              email: formData.email,
+              password: formData.password
+            }
+          }
+        })
+      });
+
+      if (response.ok) {
+        alert("Registration successful! You can now log in.");
+        setLocation('/login');
+      } else {
+        alert("Registration failed. Please try again.");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+      alert("An error occurred during registration.");
+    } finally {
       setLoading(false);
-      alert("Registration successful! Redirecting to dashboard...");
-      setLocation('/dashboard');
-    }, 2000);
+    }
   };
+
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
