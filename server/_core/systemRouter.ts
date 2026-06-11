@@ -2,7 +2,6 @@ import { z } from "zod";
 import { publicProcedure, router } from "./trpc";
 import { db } from "../db";
 import { users } from "../../drizzle/schema";
-import { eq } from "drizzle-orm";
 
 export const systemRouter = router({
   health: publicProcedure
@@ -24,6 +23,10 @@ export const systemRouter = router({
         loginMethod: "email",
         role: "user",
       });
-      return { success: true, id: result.insertId };
+      
+      // Note: result.insertId is for MySQL
+      const id = (result as any).insertId;
+      
+      return { success: true, id };
     }),
 });
