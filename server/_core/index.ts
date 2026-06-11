@@ -37,6 +37,12 @@ async function startServer() {
     await setupVite(app, server);
   } else {
     serveStatic(app);
+    
+    // Catch-all route for SPA in production
+    app.get("*", (_req, res) => {
+      const distPath = path.resolve(import.meta.dirname, "public");
+      res.sendFile(path.resolve(distPath, "index.html"));
+    });
   }
 
   // Railway provides PORT env var, use it directly
