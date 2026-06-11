@@ -1,6 +1,8 @@
 import "dotenv/config";
 import express from "express";
+import fs from "node:fs";
 import { createServer } from "http";
+import path from "node:path";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { registerStorageProxy } from "./storageProxy";
@@ -43,7 +45,12 @@ async function startServer() {
     // Catch-all route for SPA in production
     app.get("*", (_req, res) => {
       const distPath = path.resolve(import.meta.dirname, "public");
-      res.sendFile(path.resolve(distPath, "index.html"));
+      const indexPath = path.resolve(distPath, "index.html");
+      if (fs.existsSync(indexPath)) {
+        res.sendFile(indexPath);
+      } else {
+        res.status(404).send("Frontend build not found");
+      }
     });
   }
 
