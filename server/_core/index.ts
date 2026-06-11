@@ -19,6 +19,9 @@ async function startServer() {
   // Register middleware
   registerStorageProxy(app);
   registerOAuthRoutes(app);
+
+  // Railway Health Check
+  app.get("/health", (_req, res) => res.status(200).send("OK"));
   
   // tRPC API
   app.use(
