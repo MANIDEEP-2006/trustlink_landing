@@ -12,8 +12,10 @@ async function startServer() {
   const app = express();
   const server = createServer(app);
 
-  // Railway Health Check - MUST be first to avoid being caught by other middleware/routes
-  app.get("/health", (_req, res) => res.status(200).send("OK"));
+  // Railway Health Check - MUST be first and have no dependencies
+  app.get("/health", (_req, res) => {
+    res.status(200).setHeader('Content-Type', 'text/plain').send("OK");
+  });
   
   // Configure body parser with larger size limit for file uploads
   app.use(express.json({ limit: "50mb" }));
