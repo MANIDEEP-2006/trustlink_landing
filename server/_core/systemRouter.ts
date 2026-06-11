@@ -1,29 +1,29 @@
 import { z } from "zod";
-import { notifyOwner } from "./notification";
-import { adminProcedure, publicProcedure, router } from "./trpc";
+import { publicProcedure, router } from "./trpc";
+import { db } from "../db";
+import { users } from "../../drizzle/schema";
+import { eq } from "drizzle-orm";
 
 export const systemRouter = router({
   health: publicProcedure
-    .input(
-      z.object({
-        timestamp: z.number().min(0, "timestamp cannot be negative"),
-      })
-    )
-    .query(() => ({
-      ok: true,
-    })),
+    .input(z.object({ timestamp: z.number() }))
+    .query(() => ({ ok: true })),
 
-  notifyOwner: adminProcedure
-    .input(
-      z.object({
-        title: z.string().min(1, "title is required"),
-        content: z.string().min(1, "content is required"),
-      })
-    )
+  register: publicProcedure
+    .input(z.object({
+      name: z.string(),
+      email: z.string().email(),
+      password: z.string(),
+    }))
     .mutation(async ({ input }) => {
-      const delivered = await notifyOwner(input);
-      return {
-        success: delivered,
-      } as const;
+      // Create a real user in the database
+      const [result] = await db.insert(users).values({
+        openId: `user-${Date.now()}`,
+        name: input.name,
+        email: input.email,
+        loginMethod: "email",
+        role: "user",
+      });
+      return { success: true, id: result.insertId };
     }),
 });
