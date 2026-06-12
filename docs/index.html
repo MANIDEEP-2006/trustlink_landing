@@ -5,6 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TrustLink — AI-Powered Identity Verification</title>
 <meta name="description" content="TrustLink demo — AI-powered identity verification platform with OCR extraction, biometric face matching, fraud detection and trust scoring. Built by Sai Kiran Manideep.">
+<meta property="og:title" content="TrustLink — AI Identity Verification (Live Demo)">
+<meta property="og:description" content="Smart OCR · Biometric Face Match · AI Fraud Detection · Trust Scoring. Built by Sai Kiran Manideep.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://manideep-2006.github.io/trustlink_landing/">
+<meta name="theme-color" content="#3b82f6">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%233b82f6'/%3E%3Cstop offset='1' stop-color='%2306b6d4'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='22' fill='url(%23g)'/%3E%3Cpath d='M50 18 L76 30 V52 C76 68 64 78 50 84 C36 78 24 68 24 52 V30 Z' fill='white'/%3E%3Cpath d='M40 52 L47 59 L62 42' stroke='%233b82f6' stroke-width='7' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
 <style>
 :root{
@@ -16,17 +21,30 @@
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 html{scroll-behavior:smooth;}
-body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;overflow-x:hidden;}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;overflow-x:hidden;cursor:none;}
 ::selection{background:var(--blue);color:#fff;}
 ::-webkit-scrollbar{width:9px;}
 ::-webkit-scrollbar-track{background:var(--bg);}
 ::-webkit-scrollbar-thumb{background:linear-gradient(var(--blue),var(--cyan));border-radius:8px;}
 
-/* demo ribbon */
-.ribbon{position:fixed;top:0;left:0;right:0;z-index:10000;background:linear-gradient(90deg,#1d4ed8,#0891b2);text-align:center;font-size:12.5px;padding:7px 14px;color:#e0f2fe;letter-spacing:.4px;}
-.ribbon a{color:#fff;font-weight:700;text-decoration:underline;}
+/* ===== CURSOR ===== */
+.cur-dot{position:fixed;width:8px;height:8px;background:var(--cyan);border-radius:50%;pointer-events:none;z-index:99999;transform:translate(-50%,-50%);}
+.cur-ring{position:fixed;width:36px;height:36px;border:1.5px solid rgba(59,130,246,.7);border-radius:50%;pointer-events:none;z-index:99998;transform:translate(-50%,-50%);transition:width .25s,height .25s,border-color .25s,background .25s;}
+.cur-ring.hov{width:62px;height:62px;border-color:var(--cyan);background:rgba(6,182,212,.08);}
+@media(hover:none){.cur-dot,.cur-ring{display:none;}body{cursor:auto;}}
 
-/* orbs */
+/* ===== LOADER ===== */
+#loader{position:fixed;inset:0;background:var(--bg);z-index:100000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;transition:opacity .7s,visibility .7s;}
+#loader.done{opacity:0;visibility:hidden;}
+.shield-load{width:84px;height:84px;position:relative;animation:shieldPulse 1.6s ease-in-out infinite;}
+@keyframes shieldPulse{0%,100%{transform:scale(1);filter:drop-shadow(0 0 14px rgba(59,130,246,.7));}50%{transform:scale(1.12);filter:drop-shadow(0 0 34px rgba(6,182,212,.95));}}
+.loader-text{font-size:14px;letter-spacing:6px;color:var(--muted);text-transform:uppercase;animation:pulse 1.3s infinite;}
+@keyframes pulse{0%,100%{opacity:.4;}50%{opacity:1;}}
+
+/* ===== 3D BG CANVAS ===== */
+#bg3d{position:fixed;inset:0;z-index:0;}
+.grid-bg{position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(148,163,184,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(148,163,184,.05) 1px,transparent 1px);background-size:48px 48px;mask-image:radial-gradient(ellipse at center,black 25%,transparent 75%);animation:gridDrift 14s linear infinite;}
+@keyframes gridDrift{from{background-position:0 0,0 0;}to{background-position:48px 48px,48px 48px;}}
 .orb{position:fixed;border-radius:50%;filter:blur(90px);opacity:.2;pointer-events:none;z-index:0;}
 .orb.a{width:480px;height:480px;background:linear-gradient(90deg,#2563eb,#06b6d4);top:60px;left:-100px;animation:drift1 9s ease-in-out infinite;}
 .orb.b{width:460px;height:460px;background:linear-gradient(90deg,#9333ea,#ec4899);top:180px;right:-120px;animation:drift2 11s ease-in-out infinite;}
@@ -34,117 +52,190 @@ body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,san
 @keyframes drift1{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(90px,50px) scale(1.18);}}
 @keyframes drift2{0%,100%{transform:translate(0,0) scale(1.15);}50%{transform:translate(-90px,90px) scale(1);}}
 
-/* grid overlay */
-.grid-bg{position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(148,163,184,.05) 1px,transparent 1px),linear-gradient(90deg,rgba(148,163,184,.05) 1px,transparent 1px);background-size:48px 48px;mask-image:radial-gradient(ellipse at center,black 30%,transparent 75%);}
+/* scroll progress */
+#sprog{position:fixed;top:0;left:0;height:3.5px;width:0;background:linear-gradient(90deg,var(--blue),var(--cyan),var(--purple));z-index:10001;box-shadow:0 0 12px rgba(6,182,212,.8);}
+
+/* demo ribbon */
+.ribbon{position:fixed;top:0;left:0;right:0;z-index:10000;background:linear-gradient(90deg,#1d4ed8,#0891b2);text-align:center;font-size:12.5px;padding:7px 14px;color:#e0f2fe;letter-spacing:.4px;}
+.ribbon a{color:#fff;font-weight:700;text-decoration:underline;}
 
 main{position:relative;z-index:2;}
 nav{position:fixed;top:32px;left:0;right:0;z-index:9000;display:flex;align-items:center;justify-content:space-between;padding:16px 6vw;transition:.4s;}
-nav.scrolled{background:rgba(2,6,23,.82);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);top:0;padding-top:44px;}
+nav.scrolled{background:rgba(2,6,23,.85);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);top:0;padding-top:44px;}
 .logo{display:flex;align-items:center;gap:10px;font-size:21px;font-weight:800;}
-.logo .shield{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--blue),var(--cyan));display:flex;align-items:center;justify-content:center;font-size:17px;}
+.logo .shield{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--blue),var(--cyan));display:flex;align-items:center;justify-content:center;font-size:17px;animation:logoGlow 3s ease-in-out infinite;}
+@keyframes logoGlow{0%,100%{box-shadow:0 0 10px rgba(59,130,246,.5);}50%{box-shadow:0 0 26px rgba(6,182,212,.9);}}
 .logo span{background:linear-gradient(90deg,#60a5fa,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent;}
 .nav-cta{display:flex;gap:14px;}
-.btn{padding:12px 26px;border-radius:12px;font-weight:700;font-size:14.5px;text-decoration:none;display:inline-flex;align-items:center;gap:9px;transition:transform .3s,box-shadow .3s;border:none;cursor:pointer;}
+.btn{padding:12px 26px;border-radius:12px;font-weight:700;font-size:14.5px;text-decoration:none;display:inline-flex;align-items:center;gap:9px;transition:transform .3s,box-shadow .3s;border:none;cursor:none;}
 .btn-p{background:linear-gradient(120deg,var(--blue),var(--cyan));color:#fff;box-shadow:0 8px 28px rgba(37,99,235,.4);}
 .btn-p:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 14px 40px rgba(6,182,212,.45);}
 .btn-g{background:rgba(148,163,184,.1);border:1px solid var(--border);color:var(--text);}
 .btn-g:hover{transform:translateY(-3px);border-color:var(--cyan);}
 
-/* hero */
-.hero{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:150px 7vw 80px;}
+/* ===== HERO with 3D ID CARD ===== */
+.hero{min-height:100vh;display:grid;grid-template-columns:1.05fr .95fr;gap:40px;align-items:center;padding:150px 7vw 80px;}
+@media(max-width:980px){.hero{grid-template-columns:1fr;text-align:center;padding-top:135px;}}
 .pill{display:inline-flex;align-items:center;gap:8px;background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.35);color:#93c5fd;padding:8px 18px;border-radius:50px;font-size:13px;font-weight:700;letter-spacing:1px;animation:fadeUp .8s .1s both;}
 .pill .dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 10px var(--green);animation:pulse 1.6s infinite;}
-@keyframes pulse{0%,100%{opacity:.5;}50%{opacity:1;}}
-.hero h1{font-size:clamp(38px,6vw,74px);font-weight:900;line-height:1.08;margin:26px 0 18px;animation:fadeUp .8s .25s both;}
+.hero h1{font-size:clamp(36px,5.2vw,66px);font-weight:900;line-height:1.08;margin:24px 0 18px;animation:fadeUp .8s .25s both;}
 .grad{background:linear-gradient(90deg,#60a5fa,#22d3ee,#a78bfa,#60a5fa);background-size:300%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:gshift 6s linear infinite;}
 @keyframes gshift{to{background-position:300% center;}}
-.hero p{color:var(--muted);font-size:clamp(16px,1.8vw,19px);max-width:680px;line-height:1.75;animation:fadeUp .8s .4s both;}
-.hero-ctas{display:flex;gap:18px;margin-top:38px;flex-wrap:wrap;justify-content:center;animation:fadeUp .8s .55s both;}
-.hero-stats{display:flex;gap:46px;margin-top:64px;flex-wrap:wrap;justify-content:center;animation:fadeUp .8s .7s both;}
-.hstat{text-align:center;}
-.hstat .n{font-size:34px;font-weight:900;background:linear-gradient(90deg,#60a5fa,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent;}
-.hstat .l{color:var(--muted);font-size:13px;margin-top:5px;letter-spacing:1px;}
+.hero p.lead{color:var(--muted);font-size:clamp(15.5px,1.7vw,18px);max-width:560px;line-height:1.75;animation:fadeUp .8s .4s both;}
+@media(max-width:980px){.hero p.lead{margin:0 auto;}}
+.hero-ctas{display:flex;gap:18px;margin-top:34px;flex-wrap:wrap;animation:fadeUp .8s .55s both;}
+@media(max-width:980px){.hero-ctas{justify-content:center;}}
+.hero-stats{display:flex;gap:42px;margin-top:52px;flex-wrap:wrap;animation:fadeUp .8s .7s both;}
+@media(max-width:980px){.hero-stats{justify-content:center;}}
+.hstat .n{font-size:32px;font-weight:900;background:linear-gradient(90deg,#60a5fa,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.hstat .l{color:var(--muted);font-size:12px;margin-top:5px;letter-spacing:1.4px;}
 @keyframes fadeUp{from{opacity:0;transform:translateY(36px);}to{opacity:1;transform:none;}}
 
-/* verification mock card */
-.mockwrap{margin-top:70px;perspective:1100px;animation:fadeUp .9s .85s both;width:100%;display:flex;justify-content:center;}
-.mock{width:min(560px,92vw);background:linear-gradient(155deg,rgba(30,41,59,.9),rgba(15,23,42,.95));border:1px solid var(--border);border-radius:24px;padding:30px;text-align:left;box-shadow:0 40px 90px rgba(0,0,0,.6);transform-style:preserve-3d;transition:transform .15s ease-out;}
-.mock-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;}
-.mock-head .t{font-weight:800;font-size:16px;display:flex;align-items:center;gap:9px;}
-.badge-live{font-size:11px;background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.4);color:#6ee7b7;padding:5px 12px;border-radius:50px;font-weight:700;letter-spacing:1px;}
-.steps{display:flex;flex-direction:column;gap:14px;}
-.step{display:flex;align-items:center;gap:14px;background:rgba(148,163,184,.06);border:1px solid var(--border);padding:14px 16px;border-radius:14px;opacity:.4;transition:.5s;}
-.step.on{opacity:1;border-color:rgba(59,130,246,.5);background:rgba(59,130,246,.08);}
-.step .ico{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:17px;flex:none;background:linear-gradient(135deg,var(--blue),var(--cyan));}
-.step .tx{flex:1;}
-.step .tx b{display:block;font-size:14px;}
-.step .tx span{font-size:12px;color:var(--muted);}
-.step .st{font-size:17px;}
-.score-row{margin-top:22px;display:flex;align-items:center;gap:18px;}
-.score-ring{width:86px;height:86px;flex:none;position:relative;}
-.score-ring svg{transform:rotate(-90deg);}
-.score-ring .num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:21px;color:#6ee7b7;}
-.score-info b{font-size:15px;display:block;margin-bottom:4px;}
-.score-info span{font-size:12.5px;color:var(--muted);line-height:1.5;display:block;}
+/* === 3D HOLOGRAPHIC ID CARD === */
+.idwrap{perspective:1300px;display:flex;justify-content:center;animation:fadeUp 1s .5s both;}
+.idcard{position:relative;width:min(400px,88vw);aspect-ratio:1.586;transform-style:preserve-3d;animation:idFloat 7s ease-in-out infinite;transition:transform .15s ease-out;}
+@keyframes idFloat{0%,100%{transform:translateY(0) rotateY(-9deg) rotateX(5deg);}50%{transform:translateY(-20px) rotateY(9deg) rotateX(-5deg);}}
+.idcard.manual{animation:none;}
+.idface{position:absolute;inset:0;border-radius:20px;background:linear-gradient(135deg,rgba(30,58,138,.85),rgba(15,23,42,.95) 55%,rgba(8,51,68,.9));border:1px solid rgba(96,165,250,.4);box-shadow:0 40px 90px rgba(0,0,0,.65),inset 0 0 50px rgba(59,130,246,.12);overflow:hidden;padding:22px;backface-visibility:hidden;}
+.idface::before{content:'';position:absolute;inset:0;background:linear-gradient(115deg,transparent 30%,rgba(96,165,250,.18) 45%,rgba(34,211,238,.22) 50%,rgba(96,165,250,.18) 55%,transparent 70%);transform:translateX(-110%);animation:holo 4.2s ease-in-out infinite;}
+@keyframes holo{0%,55%{transform:translateX(-110%);}90%,100%{transform:translateX(110%);}}
+.id-top{display:flex;justify-content:space-between;align-items:center;}
+.id-brand{display:flex;align-items:center;gap:8px;font-weight:800;font-size:14px;letter-spacing:1px;}
+.id-brand .s{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--blue),var(--cyan));display:flex;align-items:center;justify-content:center;font-size:13px;}
+.id-chip{width:38px;height:28px;border-radius:6px;background:linear-gradient(135deg,#fbbf24,#d97706);position:relative;overflow:hidden;}
+.id-chip::before,.id-chip::after{content:'';position:absolute;background:rgba(0,0,0,.25);}
+.id-chip::before{left:0;right:0;top:12px;height:1.5px;}
+.id-chip::after{top:0;bottom:0;left:17px;width:1.5px;}
+.id-mid{display:flex;gap:16px;margin-top:18px;align-items:center;}
+.id-photo{width:74px;height:88px;border-radius:10px;background:linear-gradient(160deg,#1e3a8a,#0e7490);border:1px solid rgba(148,163,184,.3);display:flex;align-items:center;justify-content:center;font-size:36px;position:relative;overflow:hidden;}
+.scanline{position:absolute;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,#22d3ee,transparent);box-shadow:0 0 14px #22d3ee;animation:scanY 2.6s ease-in-out infinite;}
+@keyframes scanY{0%,100%{top:6%;}50%{top:90%;}}
+.id-fields{flex:1;}
+.id-fields .fl{margin-bottom:9px;}
+.id-fields .fl b{display:block;font-size:8.5px;letter-spacing:2px;color:#64748b;text-transform:uppercase;}
+.id-fields .fl span{font-size:13px;font-weight:700;letter-spacing:.4px;}
+.id-bottom{display:flex;justify-content:space-between;align-items:flex-end;margin-top:14px;}
+.id-trust{display:flex;align-items:center;gap:9px;}
+.tring{width:46px;height:46px;position:relative;}
+.tring svg{transform:rotate(-90deg);}
+.tring .tn{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:#6ee7b7;}
+.id-trust .tl{font-size:9px;letter-spacing:1.6px;color:#64748b;text-transform:uppercase;line-height:1.5;}
+.id-trust .tl b{display:block;color:#6ee7b7;font-size:11px;letter-spacing:1px;}
+.id-qr{width:46px;height:46px;border-radius:8px;background:
+ conic-gradient(#e2e8f0 25%,transparent 0 50%,#e2e8f0 0 75%,transparent 0) 0 0/14px 14px,
+ #0f172a;border:1px solid rgba(148,163,184,.3);opacity:.9;}
+.id-verified{position:absolute;top:14px;right:64px;background:rgba(16,185,129,.16);border:1px solid rgba(16,185,129,.5);color:#6ee7b7;font-size:9.5px;font-weight:800;letter-spacing:1.6px;padding:4px 10px;border-radius:40px;animation:pulse 2s infinite;}
+/* floating chips around card */
+.fchip{position:absolute;background:rgba(15,23,42,.92);border:1px solid var(--border);border-radius:13px;padding:9px 14px;font-size:11.5px;font-weight:700;display:flex;align-items:center;gap:7px;box-shadow:0 14px 36px rgba(0,0,0,.5);animation:chipFloat 5s ease-in-out infinite;white-space:nowrap;}
+.fchip.c1{top:-9%;left:-7%;border-color:rgba(59,130,246,.5);animation-delay:-1s;}
+.fchip.c2{bottom:-9%;right:-5%;border-color:rgba(16,185,129,.5);animation-delay:-2.6s;}
+.fchip.c3{top:38%;right:-15%;border-color:rgba(168,85,247,.5);animation-delay:-3.8s;}
+@media(max-width:480px){.fchip.c3{display:none;}}
+@keyframes chipFloat{0%,100%{transform:translateY(0) rotate(0) translateZ(60px);}50%{transform:translateY(-13px) rotate(2.5deg) translateZ(60px);}}
+
+/* ===== marquee ===== */
+.marq{overflow:hidden;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:rgba(15,23,42,.6);padding:15px 0;position:relative;z-index:2;backdrop-filter:blur(6px);}
+.marq-t{display:flex;gap:50px;width:max-content;animation:mscroll 24s linear infinite;}
+.marq-t span{font-size:14.5px;font-weight:800;letter-spacing:2.5px;color:var(--muted);white-space:nowrap;display:flex;align-items:center;gap:13px;}
+.marq-t span i{font-style:normal;color:var(--cyan);}
+@keyframes mscroll{to{transform:translateX(-50%);}}
 
 /* sections */
 section{padding:110px 7vw;position:relative;}
 .k{font-size:12.5px;letter-spacing:5px;color:var(--cyan);text-transform:uppercase;font-weight:800;text-align:center;}
 h2.title{font-size:clamp(30px,4vw,46px);font-weight:900;text-align:center;margin:14px 0 16px;}
 .sub{color:var(--muted);text-align:center;max-width:620px;margin:0 auto 64px;line-height:1.7;}
+.reveal{opacity:0;transform:translateY(46px);transition:opacity .8s cubic-bezier(.2,.7,.3,1),transform .8s cubic-bezier(.2,.7,.3,1);}
+.reveal.in{opacity:1;transform:none;}
 
-/* features */
+/* ===== pipeline demo ===== */
+.mockwrap{display:flex;justify-content:center;perspective:1100px;}
+.mock{width:min(620px,94vw);background:linear-gradient(155deg,rgba(30,41,59,.9),rgba(15,23,42,.95));border:1px solid var(--border);border-radius:24px;padding:32px;box-shadow:0 40px 90px rgba(0,0,0,.6);transform-style:preserve-3d;transition:transform .15s ease-out,box-shadow .4s;}
+.mock:hover{box-shadow:0 50px 110px rgba(37,99,235,.3);}
+.mock-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;}
+.mock-head .t{font-weight:800;font-size:16px;display:flex;align-items:center;gap:9px;}
+.badge-live{font-size:11px;background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.4);color:#6ee7b7;padding:5px 12px;border-radius:50px;font-weight:700;letter-spacing:1px;}
+.steps{display:flex;flex-direction:column;gap:14px;}
+.step{display:flex;align-items:center;gap:14px;background:rgba(148,163,184,.06);border:1px solid var(--border);padding:14px 16px;border-radius:14px;opacity:.4;transition:.5s;transform:translateZ(20px);}
+.step.on{opacity:1;border-color:rgba(59,130,246,.5);background:rgba(59,130,246,.08);box-shadow:0 6px 22px rgba(37,99,235,.25);}
+.step .ico{width:38px;height:38px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:17px;flex:none;background:linear-gradient(135deg,var(--blue),var(--cyan));}
+.step .tx{flex:1;}
+.step .tx b{display:block;font-size:14px;}
+.step .tx span{font-size:12px;color:var(--muted);}
+.step .st{font-size:17px;}
+.score-row{margin-top:22px;display:flex;align-items:center;gap:18px;}
+.score-ring{width:90px;height:90px;flex:none;position:relative;}
+.score-ring svg{transform:rotate(-90deg);}
+.score-ring .num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:22px;color:#6ee7b7;}
+.score-info b{font-size:15px;display:block;margin-bottom:4px;}
+.score-info span{font-size:12.5px;color:var(--muted);line-height:1.5;display:block;}
+.replay{margin-top:20px;text-align:center;}
+.replay button{background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.4);color:#93c5fd;padding:10px 22px;border-radius:11px;font-weight:700;font-size:13px;cursor:none;transition:.3s;}
+.replay button:hover{background:rgba(59,130,246,.25);transform:translateY(-2px);}
+
+/* features 3D flip cards */
 .feat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(255px,1fr));gap:24px;max-width:1180px;margin:0 auto;}
-.feat{background:var(--card);border:1px solid var(--border);border-radius:22px;padding:34px 28px;backdrop-filter:blur(10px);transition:transform .4s,box-shadow .4s,border-color .4s;position:relative;overflow:hidden;}
-.feat::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;opacity:0;transition:.4s;}
-.feat.f1::before{background:linear-gradient(90deg,#3b82f6,#06b6d4);}
-.feat.f2::before{background:linear-gradient(90deg,#a855f7,#ec4899);}
-.feat.f3::before{background:linear-gradient(90deg,#f97316,#ef4444);}
-.feat.f4::before{background:linear-gradient(90deg,#10b981,#34d399);}
-.feat:hover{transform:translateY(-10px);box-shadow:0 26px 60px rgba(0,0,0,.5);border-color:rgba(96,165,250,.4);}
-.feat:hover::before{opacity:1;}
-.feat .fic{width:52px;height:52px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:23px;margin-bottom:20px;}
-.f1 .fic{background:linear-gradient(135deg,#3b82f6,#06b6d4);}
-.f2 .fic{background:linear-gradient(135deg,#a855f7,#ec4899);}
-.f3 .fic{background:linear-gradient(135deg,#f97316,#ef4444);}
-.f4 .fic{background:linear-gradient(135deg,#10b981,#34d399);}
-.feat h3{font-size:17.5px;margin-bottom:10px;}
-.feat p{color:var(--muted);font-size:14px;line-height:1.7;}
+.flip{perspective:900px;height:240px;}
+.flip-in{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .8s cubic-bezier(.2,.7,.3,1);}
+.flip:hover .flip-in{transform:rotateY(180deg);}
+.fface{position:absolute;inset:0;backface-visibility:hidden;border-radius:22px;border:1px solid var(--border);padding:32px 26px;display:flex;flex-direction:column;justify-content:center;}
+.fface.front{background:var(--card);backdrop-filter:blur(10px);}
+.fface.back{transform:rotateY(180deg);display:flex;align-items:flex-start;justify-content:center;flex-direction:column;gap:8px;}
+.fface.back p{font-size:13px;line-height:1.65;color:rgba(255,255,255,.92);}
+.fb1{background:linear-gradient(135deg,#1d4ed8,#0891b2);}
+.fb2{background:linear-gradient(135deg,#7e22ce,#be185d);}
+.fb3{background:linear-gradient(135deg,#c2410c,#b91c1c);}
+.fb4{background:linear-gradient(135deg,#047857,#0d9488);}
+.fic{width:52px;height:52px;border-radius:15px;display:flex;align-items:center;justify-content:center;font-size:23px;margin-bottom:18px;}
+.fi1{background:linear-gradient(135deg,#3b82f6,#06b6d4);}
+.fi2{background:linear-gradient(135deg,#a855f7,#ec4899);}
+.fi3{background:linear-gradient(135deg,#f97316,#ef4444);}
+.fi4{background:linear-gradient(135deg,#10b981,#34d399);}
+.fface h3{font-size:17.5px;margin-bottom:9px;}
+.fface.front p{color:var(--muted);font-size:13.5px;line-height:1.65;}
+.fface.back b{font-size:15px;}
+.flip-hint{font-size:10.5px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-top:10px;}
 
 /* how it works */
-.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:22px;max-width:1100px;margin:0 auto;counter-reset:fs;}
-.fstep{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:30px 24px;text-align:center;position:relative;transition:.4s;}
-.fstep:hover{transform:translateY(-8px);border-color:rgba(34,211,238,.45);}
-.fstep .num{width:44px;height:44px;margin:0 auto 16px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--cyan));display:flex;align-items:center;justify-content:center;font-weight:900;font-size:17px;}
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:22px;max-width:1100px;margin:0 auto;}
+.fstep{background:var(--card);border:1px solid var(--border);border-radius:20px;padding:30px 24px;text-align:center;transition:.4s;transform-style:preserve-3d;}
+.fstep:hover{transform:translateY(-8px) rotateX(6deg);border-color:rgba(34,211,238,.45);box-shadow:0 24px 50px rgba(0,0,0,.45);}
+.fstep .num{width:44px;height:44px;margin:0 auto 16px;border-radius:50%;background:linear-gradient(135deg,var(--blue),var(--cyan));display:flex;align-items:center;justify-content:center;font-weight:900;font-size:17px;box-shadow:0 8px 22px rgba(37,99,235,.4);}
 .fstep h4{font-size:15.5px;margin-bottom:8px;}
 .fstep p{color:var(--muted);font-size:13px;line-height:1.65;}
 
 /* benefits */
 .bene-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;max-width:1100px;margin:0 auto;}
 .bene{display:flex;align-items:center;gap:13px;background:var(--card);border:1px solid var(--border);border-radius:15px;padding:17px 20px;font-size:14.5px;font-weight:600;transition:.35s;}
-.bene:hover{transform:translateX(6px);border-color:rgba(16,185,129,.45);}
+.bene:hover{transform:translateX(6px) scale(1.02);border-color:rgba(16,185,129,.45);box-shadow:0 12px 30px rgba(16,185,129,.15);}
 .bene .ic{font-size:18px;}
 
 /* tech */
 .tech-band{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;max-width:900px;margin:0 auto;}
 .tt{background:rgba(148,163,184,.08);border:1px solid var(--border);padding:9px 20px;border-radius:50px;font-size:13.5px;color:var(--muted);font-weight:600;transition:.3s;}
-.tt:hover{color:#fff;border-color:var(--blue);transform:translateY(-3px);}
+.tt:hover{color:#fff;border-color:var(--blue);transform:translateY(-3px) scale(1.05);box-shadow:0 10px 24px rgba(37,99,235,.3);}
 
 /* cta */
-.cta-card{max-width:820px;margin:0 auto;background:linear-gradient(150deg,rgba(37,99,235,.18),rgba(8,145,178,.12));border:1px solid rgba(59,130,246,.3);border-radius:30px;padding:64px 48px;text-align:center;position:relative;overflow:hidden;}
+.cta-card{max-width:820px;margin:0 auto;background:linear-gradient(150deg,rgba(37,99,235,.18),rgba(8,145,178,.12));border:1px solid rgba(59,130,246,.3);border-radius:30px;padding:64px 48px;text-align:center;position:relative;overflow:hidden;transform-style:preserve-3d;transition:transform .15s ease-out;}
 .cta-card h2{font-size:clamp(26px,3.4vw,40px);margin-bottom:14px;}
 .cta-card p{color:var(--muted);margin-bottom:32px;line-height:1.7;}
-footer{padding:36px 7vw;text-align:center;color:var(--muted);font-size:13.5px;border-top:1px solid var(--border);}
+footer{padding:36px 7vw;text-align:center;color:var(--muted);font-size:13.5px;border-top:1px solid var(--border);position:relative;z-index:2;}
 footer a{color:#60a5fa;text-decoration:none;font-weight:700;}
 footer a:hover{text-decoration:underline;}
-
-.reveal{opacity:0;transform:translateY(46px);transition:opacity .8s cubic-bezier(.2,.7,.3,1),transform .8s cubic-bezier(.2,.7,.3,1);}
-.reveal.in{opacity:1;transform:none;}
+#toTop{position:fixed;bottom:26px;right:26px;width:50px;height:50px;border-radius:15px;background:linear-gradient(135deg,var(--blue),var(--cyan));border:none;color:#fff;font-size:19px;z-index:9000;opacity:0;visibility:hidden;transform:translateY(20px);transition:.4s;cursor:none;box-shadow:0 12px 30px rgba(37,99,235,.5);}
+#toTop.show{opacity:1;visibility:visible;transform:none;}
 @media(max-width:640px){section{padding:80px 6vw;}.nav-cta .btn-g{display:none;}}
 </style>
 </head>
 <body>
-<div class="ribbon">🧪 Interactive Landing Demo — full-stack source code on <a href="https://github.com/MANIDEEP-2006/trustlink_landing" target="_blank">GitHub</a> · built by <a href="https://manideep-2006.github.io/my-portfolio/" target="_blank">Sai Kiran Manideep</a></div>
+<div id="loader">
+  <svg class="shield-load" viewBox="0 0 100 100"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3b82f6"/><stop offset="1" stop-color="#06b6d4"/></linearGradient></defs><path d="M50 8 L84 23 V52 C84 72 69 85 50 93 C31 85 16 72 16 52 V23 Z" fill="url(#lg)"/><path d="M37 52 L46 61 L65 40" stroke="white" stroke-width="7" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+  <div class="loader-text">TrustLink</div>
+</div>
+<div class="cur-dot"></div><div class="cur-ring"></div>
+<div id="sprog"></div>
+<div class="ribbon">🧪 Interactive Landing Demo — full-stack source on <a href="https://github.com/MANIDEEP-2006/trustlink_landing" target="_blank">GitHub</a> · built by <a href="https://manideep-2006.github.io/my-portfolio/" target="_blank">Sai Kiran Manideep</a></div>
+<canvas id="bg3d"></canvas>
 <div class="orb a"></div><div class="orb b"></div><div class="orb c"></div>
 <div class="grid-bg"></div>
 
@@ -152,28 +243,75 @@ footer a:hover{text-decoration:underline;}
   <div class="logo"><span class="shield">🛡️</span>Trust<span>Link</span></div>
   <div class="nav-cta">
     <a class="btn btn-g" href="https://github.com/MANIDEEP-2006/trustlink_landing" target="_blank">⌥ Source Code</a>
-    <a class="btn btn-p" href="#features">Explore ↓</a>
+    <a class="btn btn-p" href="#demo">Live Pipeline ↓</a>
   </div>
 </nav>
 
 <main>
+<!-- HERO -->
 <section class="hero">
-  <div class="pill"><span class="dot"></span> AI-POWERED IDENTITY VERIFICATION</div>
-  <h1>Verify Identities with<br><span class="grad">AI-Driven Trust</span></h1>
-  <p>TrustLink combines smart OCR extraction, biometric face matching and AI fraud detection to deliver sub-second identity verification with comprehensive trust scoring.</p>
-  <div class="hero-ctas">
-    <a class="btn btn-p" href="#demo">🚀 See It In Action</a>
-    <a class="btn btn-g" href="#how">How It Works</a>
-  </div>
-  <div class="hero-stats">
-    <div class="hstat"><div class="n" data-to="99.8" data-dec="1">0</div><div class="l">% ACCURACY RATE</div></div>
-    <div class="hstat"><div class="n" data-to="0.8" data-dec="1">0</div><div class="l">SEC PROCESSING</div></div>
-    <div class="hstat"><div class="n" data-to="8">0</div><div class="l">CORE FEATURES</div></div>
+  <div>
+    <div class="pill"><span class="dot"></span> AI-POWERED IDENTITY VERIFICATION</div>
+    <h1>Verify Identities with <span class="grad">AI-Driven Trust</span></h1>
+    <p class="lead">TrustLink combines smart OCR extraction, biometric face matching and AI fraud detection to deliver sub-second identity verification with comprehensive trust scoring.</p>
+    <div class="hero-ctas">
+      <a class="btn btn-p" href="#demo">🚀 Watch the Pipeline</a>
+      <a class="btn btn-g" href="#features">Explore Features</a>
+    </div>
+    <div class="hero-stats">
+      <div class="hstat"><div class="n cnt" data-to="99.8" data-dec="1">0</div><div class="l">% ACCURACY</div></div>
+      <div class="hstat"><div class="n cnt" data-to="0.8" data-dec="1">0</div><div class="l">SEC PROCESSING</div></div>
+      <div class="hstat"><div class="n cnt" data-to="8">0</div><div class="l">CORE FEATURES</div></div>
+    </div>
   </div>
 
-  <!-- live verification mock -->
-  <div class="mockwrap" id="demo">
-    <div class="mock" id="mockCard">
+  <!-- 3D HOLOGRAPHIC ID CARD -->
+  <div class="idwrap">
+    <div class="idcard" id="idcard">
+      <div class="idface">
+        <div class="id-top">
+          <div class="id-brand"><span class="s">🛡️</span>TRUSTLINK ID</div>
+          <div class="id-chip"></div>
+        </div>
+        <span class="id-verified">● VERIFIED</span>
+        <div class="id-mid">
+          <div class="id-photo">👤<div class="scanline"></div></div>
+          <div class="id-fields">
+            <div class="fl"><b>Full Name</b><span>SAI KIRAN MANIDEEP</span></div>
+            <div class="fl"><b>ID Number</b><span>TL-2026-0612-94X</span></div>
+            <div class="fl"><b>Status</b><span style="color:#6ee7b7;">IDENTITY CONFIRMED</span></div>
+          </div>
+        </div>
+        <div class="id-bottom">
+          <div class="id-trust">
+            <div class="tring">
+              <svg width="46" height="46"><circle cx="23" cy="23" r="18" stroke="rgba(148,163,184,.2)" stroke-width="4.5" fill="none"/><circle cx="23" cy="23" r="18" stroke="#10b981" stroke-width="4.5" fill="none" stroke-linecap="round" stroke-dasharray="113" stroke-dashoffset="7" /></svg>
+              <div class="tn">94</div>
+            </div>
+            <div class="tl">TRUST<br>SCORE<b>HIGH</b></div>
+          </div>
+          <div class="id-qr"></div>
+        </div>
+      </div>
+      <div class="fchip c1">🔍 OCR Extracted</div>
+      <div class="fchip c2">✅ Face Match 98.7%</div>
+      <div class="fchip c3">🧠 Fraud Risk: LOW</div>
+    </div>
+  </div>
+</section>
+
+<!-- MARQUEE -->
+<div class="marq"><div class="marq-t" id="mq">
+  <span>SMART OCR <i>◆</i></span><span>FACE MATCHING <i>◆</i></span><span>FRAUD DETECTION <i>◆</i></span><span>TRUST SCORING <i>◆</i></span><span>QR VERIFICATION <i>◆</i></span><span>AUDIT LOGS <i>◆</i></span><span>ADMIN PANEL <i>◆</i></span><span>SUB-SECOND SPEED <i>◆</i></span>
+</div></div>
+
+<!-- PIPELINE -->
+<section id="demo">
+  <div class="k reveal">— Live Demo —</div>
+  <h2 class="title reveal">Verification <span class="grad">Pipeline</span></h2>
+  <p class="sub reveal">Watch the full identity verification flow run in real time — exactly how the production app processes each request.</p>
+  <div class="mockwrap reveal">
+    <div class="mock tilt3d" id="mockCard">
       <div class="mock-head">
         <div class="t">🛡️ Verification Pipeline</div>
         <span class="badge-live">● LIVE DEMO</span>
@@ -186,34 +324,49 @@ footer a:hover{text-decoration:underline;}
       </div>
       <div class="score-row">
         <div class="score-ring">
-          <svg width="86" height="86">
-            <circle cx="43" cy="43" r="36" stroke="rgba(148,163,184,.15)" stroke-width="8" fill="none"/>
-            <circle id="scoreArc" cx="43" cy="43" r="36" stroke="#10b981" stroke-width="8" fill="none" stroke-linecap="round" stroke-dasharray="226" stroke-dashoffset="226"/>
+          <svg width="90" height="90">
+            <circle cx="45" cy="45" r="37" stroke="rgba(148,163,184,.15)" stroke-width="8" fill="none"/>
+            <circle id="scoreArc" cx="45" cy="45" r="37" stroke="#10b981" stroke-width="8" fill="none" stroke-linecap="round" stroke-dasharray="232.5" stroke-dashoffset="232.5"/>
           </svg>
           <div class="num" id="scoreNum">0</div>
         </div>
         <div class="score-info">
           <b id="scoreTitle">Calculating Trust Score…</b>
-          <span id="scoreDesc">Multi-factor scoring based on document integrity, biometric confidence and AI risk analysis.</span>
+          <span>Multi-factor scoring based on document integrity, biometric confidence and AI risk analysis.</span>
         </div>
       </div>
+      <div class="replay"><button id="replayBtn">↻ Replay Pipeline</button></div>
     </div>
   </div>
 </section>
 
-<section id="features">
+<!-- FEATURES 3D FLIP -->
+<section id="features" style="background:rgba(15,23,42,.5);">
   <div class="k reveal">— Capabilities —</div>
   <h2 class="title reveal">Powerful <span class="grad">Features</span></h2>
-  <p class="sub reveal">Everything needed for enterprise-grade identity verification, powered by machine learning.</p>
+  <p class="sub reveal">Hover any card to flip it in 3D and see how each capability works.</p>
   <div class="feat-grid">
-    <div class="feat f1 reveal"><div class="fic">📄</div><h3>Smart OCR Extraction</h3><p>Automatically extract and validate data from identity documents with 99.8% accuracy.</p></div>
-    <div class="feat f2 reveal" style="transition-delay:.08s"><div class="fic">🤳</div><h3>Biometric Face Matching</h3><p>Advanced facial recognition technology ensures secure identity verification.</p></div>
-    <div class="feat f3 reveal" style="transition-delay:.16s"><div class="fic">🛡️</div><h3>AI Fraud Detection</h3><p>Detect tampering, copies, and suspicious patterns with machine learning.</p></div>
-    <div class="feat f4 reveal" style="transition-delay:.24s"><div class="fic">📊</div><h3>Trust Score Calculation</h3><p>Comprehensive scoring based on multiple verification factors and AI analysis.</p></div>
+    <div class="flip reveal"><div class="flip-in">
+      <div class="fface front"><div class="fic fi1">📄</div><h3>Smart OCR Extraction</h3><p>Automatically extract and validate data from identity documents with 99.8% accuracy.</p><div class="flip-hint">Hover to flip ↻</div></div>
+      <div class="fface back fb1"><b>📄 How it works</b><p>Deep-learning OCR reads passports, licences and ID cards, auto-detects fields like name, DOB and document number, then cross-validates them against checksum rules in milliseconds.</p></div>
+    </div></div>
+    <div class="flip reveal" style="transition-delay:.08s"><div class="flip-in">
+      <div class="fface front"><div class="fic fi2">🤳</div><h3>Biometric Face Matching</h3><p>Advanced facial recognition technology ensures secure identity verification.</p><div class="flip-hint">Hover to flip ↻</div></div>
+      <div class="fface back fb2"><b>🤳 How it works</b><p>A live selfie is compared against the document photo using facial embeddings — liveness checks block photos-of-photos and deepfake replays.</p></div>
+    </div></div>
+    <div class="flip reveal" style="transition-delay:.16s"><div class="flip-in">
+      <div class="fface front"><div class="fic fi3">🛡️</div><h3>AI Fraud Detection</h3><p>Detect tampering, copies, and suspicious patterns with machine learning.</p><div class="flip-hint">Hover to flip ↻</div></div>
+      <div class="fface back fb3"><b>🛡️ How it works</b><p>Models scan for pixel-level tampering, font inconsistencies and known fraud patterns, flagging suspicious submissions for review with a risk grade.</p></div>
+    </div></div>
+    <div class="flip reveal" style="transition-delay:.24s"><div class="flip-in">
+      <div class="fface front"><div class="fic fi4">📊</div><h3>Trust Score Calculation</h3><p>Comprehensive scoring based on multiple verification factors and AI analysis.</p><div class="flip-hint">Hover to flip ↻</div></div>
+      <div class="fface back fb4"><b>📊 How it works</b><p>Document integrity, biometric confidence and fraud-risk signals are weighted into a single 0–100 trust score, shareable via QR code with full audit trail.</p></div>
+    </div></div>
   </div>
 </section>
 
-<section id="how" style="background:rgba(15,23,42,.5);">
+<!-- HOW -->
+<section id="how">
   <div class="k reveal">— Pipeline —</div>
   <h2 class="title reveal">How It <span class="grad">Works</span></h2>
   <p class="sub reveal">Four steps from upload to verified identity — in under a second.</p>
@@ -225,7 +378,8 @@ footer a:hover{text-decoration:underline;}
   </div>
 </section>
 
-<section>
+<!-- BENEFITS -->
+<section style="background:rgba(15,23,42,.5);">
   <div class="k reveal">— Why TrustLink —</div>
   <h2 class="title reveal">Built for <span class="grad">Scale & Security</span></h2>
   <p class="sub reveal">Production-grade capabilities baked in from day one.</p>
@@ -241,7 +395,8 @@ footer a:hover{text-decoration:underline;}
   </div>
 </section>
 
-<section style="background:rgba(15,23,42,.5);">
+<!-- TECH -->
+<section>
   <div class="k reveal">— Under the Hood —</div>
   <h2 class="title reveal">Tech <span class="grad">Stack</span></h2>
   <p class="sub reveal">The full application is built with a modern TypeScript stack.</p>
@@ -250,8 +405,9 @@ footer a:hover{text-decoration:underline;}
   </div>
 </section>
 
+<!-- CTA -->
 <section>
-  <div class="cta-card reveal">
+  <div class="cta-card tilt3d reveal">
     <h2>Want the <span class="grad">Full Source Code?</span></h2>
     <p>This is a static demo of the TrustLink landing experience. The complete full-stack application — React frontend, Express + tRPC backend, MySQL database, admin dashboard and AI verification pipeline — is open on GitHub.</p>
     <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;">
@@ -263,11 +419,67 @@ footer a:hover{text-decoration:underline;}
 </main>
 
 <footer>TrustLink Demo · Designed & built by <a href="https://manideep-2006.github.io/my-portfolio/" target="_blank">Bonugu Sai Kiran Manideep</a> · © 2026</footer>
+<button id="toTop" aria-label="top">↑</button>
 
 <script>
-/* nav scroll */
-const nav=document.getElementById('nav');
-addEventListener('scroll',()=>nav.classList.toggle('scrolled',scrollY>40));
+/* loader */
+const hideL=()=>{const l=document.getElementById('loader');if(l)l.classList.add('done');};
+window.addEventListener('load',()=>setTimeout(hideL,500));
+document.addEventListener('DOMContentLoaded',()=>setTimeout(hideL,1100));
+setTimeout(hideL,1700);
+
+/* cursor */
+const cd=document.querySelector('.cur-dot'),cr=document.querySelector('.cur-ring');
+let mx=innerWidth/2,my=innerHeight/2,rx2=mx,ry2=my;
+addEventListener('mousemove',e=>{mx=e.clientX;my=e.clientY;cd.style.left=mx+'px';cd.style.top=my+'px';});
+(function cl(){rx2+=(mx-rx2)*.16;ry2+=(my-ry2)*.16;cr.style.left=rx2+'px';cr.style.top=ry2+'px';requestAnimationFrame(cl);})();
+document.querySelectorAll('a,button,.flip,.tt,.bene').forEach(el=>{
+  el.addEventListener('mouseenter',()=>cr.classList.add('hov'));
+  el.addEventListener('mouseleave',()=>cr.classList.remove('hov'));
+});
+
+/* ===== 3D PARTICLE FIELD with depth + connections ===== */
+const cv=document.getElementById('bg3d'),ctx=cv.getContext('2d');
+let W,H,parts=[],FOV=300,mX=0,mY=0;
+function rs(){W=cv.width=innerWidth;H=cv.height=innerHeight;}
+rs();addEventListener('resize',rs);
+addEventListener('mousemove',e=>{mX=(e.clientX/W-.5)*2;mY=(e.clientY/H-.5)*2;});
+const NP=Math.min(140,Math.floor(innerWidth/9));
+const HUES=[210,190,265];
+for(let i=0;i<NP;i++)parts.push({x:(Math.random()-.5)*W*1.5,y:(Math.random()-.5)*H*1.5,z:Math.random()*900+60,vz:.5+Math.random()*.9,h:HUES[Math.floor(Math.random()*3)]});
+(function dr(){
+  ctx.clearRect(0,0,W,H);
+  const pts=[];
+  for(const p of parts){
+    p.z-=p.vz;
+    if(p.z<40){p.z=960;p.x=(Math.random()-.5)*W*1.5;p.y=(Math.random()-.5)*H*1.5;}
+    const s=FOV/p.z;
+    const sx=W/2+(p.x+mX*200)*s*.9, sy=H/2+(p.y+mY*200)*s*.9;
+    if(sx<-60||sx>W+60||sy<-60||sy>H+60)continue;
+    const r=Math.max(.4,2.6*s), a=Math.min(.85,1.25-p.z/900);
+    ctx.beginPath();ctx.arc(sx,sy,r,0,7);
+    ctx.fillStyle=`hsla(${p.h},85%,62%,${a})`;
+    ctx.shadowColor=`hsla(${p.h},85%,55%,.8)`;ctx.shadowBlur=7*s;
+    ctx.fill();ctx.shadowBlur=0;
+    pts.push({sx,sy});
+  }
+  for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){
+    const dx=pts[i].sx-pts[j].sx,dy=pts[i].sy-pts[j].sy,d=dx*dx+dy*dy;
+    if(d<10500){ctx.beginPath();ctx.moveTo(pts[i].sx,pts[i].sy);ctx.lineTo(pts[j].sx,pts[j].sy);
+      ctx.strokeStyle=`rgba(56,130,246,${.15*(1-d/10500)})`;ctx.lineWidth=.7;ctx.stroke();}
+  }
+  requestAnimationFrame(dr);
+})();
+
+/* nav + scroll progress + toTop */
+const nav=document.getElementById('nav'),sp=document.getElementById('sprog'),tt=document.getElementById('toTop');
+addEventListener('scroll',()=>{
+  nav.classList.toggle('scrolled',scrollY>40);
+  const h=document.documentElement.scrollHeight-innerHeight;
+  sp.style.width=(scrollY/h*100)+'%';
+  tt.classList.toggle('show',scrollY>600);
+});
+tt.onclick=()=>scrollTo({top:0,behavior:'smooth'});
 
 /* reveal */
 const io=new IntersectionObserver(es=>es.forEach(e=>{
@@ -280,42 +492,61 @@ const cio=new IntersectionObserver(es=>es.forEach(e=>{
   if(!e.isIntersecting)return;
   const c=e.target;cio.unobserve(c);
   const to=parseFloat(c.dataset.to),dec=+(c.dataset.dec||0),t0=performance.now();
-  (function tick(t){const p=Math.min(1,(t-t0)/1500),k=1-Math.pow(1-p,3);
-    c.textContent=(to*k).toFixed(dec);if(p<1)requestAnimationFrame(tick);})(t0);
+  (function tk(t){const p=Math.min(1,(t-t0)/1500),k=1-Math.pow(1-p,3);
+    c.textContent=(to*k).toFixed(dec);if(p<1)requestAnimationFrame(tk);})(t0);
 }),{threshold:.6});
-document.querySelectorAll('.hstat .n').forEach(el=>cio.observe(el));
+document.querySelectorAll('.cnt').forEach(el=>cio.observe(el));
 
-/* mock pipeline animation loop */
-const steps=['s1','s2','s3','s4'].map(id=>document.getElementById(id));
-const arc=document.getElementById('scoreArc'),num=document.getElementById('scoreNum'),sTitle=document.getElementById('scoreTitle');
-function runPipeline(){
-  steps.forEach(s=>{s.classList.remove('on');s.querySelector('.st').textContent='⏳';});
-  arc.style.transition='none';arc.style.strokeDashoffset=226;num.textContent='0';
-  sTitle.textContent='Calculating Trust Score…';
-  steps.forEach((s,i)=>{
-    setTimeout(()=>{s.classList.add('on');},600+i*900);
-    setTimeout(()=>{s.querySelector('.st').textContent='✅';},1250+i*900);
+/* ===== 3D ID CARD mouse control ===== */
+const idc=document.getElementById('idcard');
+const idwrap=idc.parentElement;
+idwrap.addEventListener('mousemove',e=>{
+  const r=idwrap.getBoundingClientRect();
+  const px=(e.clientX-r.left)/r.width,py=(e.clientY-r.top)/r.height;
+  idc.classList.add('manual');
+  idc.style.transform=`rotateY(${(px-.5)*38}deg) rotateX(${(.5-py)*26}deg) translateZ(10px)`;
+});
+idwrap.addEventListener('mouseleave',()=>{idc.classList.remove('manual');idc.style.transform='';});
+
+/* tilt on cards */
+document.querySelectorAll('.tilt3d').forEach(card=>{
+  card.addEventListener('mousemove',e=>{
+    const r=card.getBoundingClientRect();
+    const px=(e.clientX-r.left)/r.width,py=(e.clientY-r.top)/r.height;
+    card.style.transform=`rotateY(${(px-.5)*9}deg) rotateX(${(.5-py)*7}deg)`;
   });
-  setTimeout(()=>{
+  card.addEventListener('mouseleave',()=>card.style.transform='');
+});
+
+/* ===== pipeline loop + replay ===== */
+const steps=['s1','s2','s3','s4'].map(id=>document.getElementById(id));
+const arc=document.getElementById('scoreArc'),num=document.getElementById('scoreNum'),sT=document.getElementById('scoreTitle');
+let pipeTimers=[];
+function clearPipe(){pipeTimers.forEach(t=>clearTimeout(t));pipeTimers=[];}
+function runPipeline(){
+  clearPipe();
+  steps.forEach(s=>{s.classList.remove('on');s.querySelector('.st').textContent='⏳';});
+  arc.style.transition='none';arc.style.strokeDashoffset=232.5;num.textContent='0';
+  sT.textContent='Calculating Trust Score…';
+  steps.forEach((s,i)=>{
+    pipeTimers.push(setTimeout(()=>s.classList.add('on'),600+i*900));
+    pipeTimers.push(setTimeout(()=>s.querySelector('.st').textContent='✅',1250+i*900));
+  });
+  pipeTimers.push(setTimeout(()=>{
     arc.style.transition='stroke-dashoffset 1.4s cubic-bezier(.2,.7,.3,1)';
-    const score=94,off=226-(226*score/100);
-    arc.style.strokeDashoffset=off;
+    const score=94;
+    arc.style.strokeDashoffset=232.5-(232.5*score/100);
     const t0=performance.now();
-    (function tick(t){const p=Math.min(1,(t-t0)/1400);num.textContent=Math.round(score*(1-Math.pow(1-p,3)));if(p<1)requestAnimationFrame(tick);})(t0);
-    sTitle.textContent='✅ Identity Verified — High Trust';
-  },600+4*900);
-  setTimeout(runPipeline,600+4*900+4200);
+    (function tk(t){const p=Math.min(1,(t-t0)/1400);num.textContent=Math.round(score*(1-Math.pow(1-p,3)));if(p<1)requestAnimationFrame(tk);})(t0);
+    sT.textContent='✅ Identity Verified — High Trust';
+  },600+4*900));
+  pipeTimers.push(setTimeout(runPipeline,600+4*900+4500));
 }
 runPipeline();
+document.getElementById('replayBtn').onclick=runPipeline;
 
-/* 3D tilt on mock card */
-const mock=document.getElementById('mockCard');
-mock.addEventListener('mousemove',e=>{
-  const r=mock.getBoundingClientRect();
-  const px=(e.clientX-r.left)/r.width,py=(e.clientY-r.top)/r.height;
-  mock.style.transform=`rotateY(${(px-.5)*10}deg) rotateX(${(.5-py)*8}deg)`;
-});
-mock.addEventListener('mouseleave',()=>mock.style.transform='');
+/* marquee */
+const mq=document.getElementById('mq');mq.innerHTML+=mq.innerHTML;
 </script>
 </body>
 </html>
