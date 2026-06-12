@@ -1,6 +1,8 @@
 # 🛡️ TrustLink — AI-Powered Identity Verification
 
-> 🌐 **[LIVE DEMO → manideep-2006.github.io/trustlink_landing](https://manideep-2006.github.io/trustlink_landing/)** · Built by [Sai Kiran Manideep](https://manideep-2006.github.io/my-portfolio/)
+> 🚀 **[LIVE PRODUCT → trustlink-app-bubs.onrender.com](https://trustlink-app-bubs.onrender.com/)** (full-stack: Express + PostgreSQL + AI)
+> 🌐 **[LANDING & BROWSER DEMO → manideep-2006.github.io/trustlink_landing](https://manideep-2006.github.io/trustlink_landing/)** · Built by [Sai Kiran Manideep](https://manideep-2006.github.io/my-portfolio/)
+> 📦 Product source: [github.com/MANIDEEP-2006/trustlink-app](https://github.com/MANIDEEP-2006/trustlink-app)
 
 **Tech stack:** React 19 · TypeScript · Vite · Tailwind · Express · tRPC · Drizzle ORM · MySQL
 
