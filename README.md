@@ -1,3 +1,13 @@
+# 🛡️ TrustLink — AI-Powered Identity Verification
+
+> 🌐 **[LIVE DEMO → manideep-2006.github.io/trustlink_landing](https://manideep-2006.github.io/trustlink_landing/)** · Built by [Sai Kiran Manideep](https://manideep-2006.github.io/my-portfolio/)
+
+**Tech stack:** React 19 · TypeScript · Vite · Tailwind · Express · tRPC · Drizzle ORM · MySQL
+
+> ⚠️ Note: the full application requires environment variables (database, OAuth keys) listed in `.env.example` to run locally. The live demo above is a static showcase of the landing experience.
+
+---
+
 # Web App Template (tRPC + Manus Auth + Database)
 
 This template gives you a React 19 + Tailwind 4 + Express 4 + tRPC 11 stack with Manus OAuth already wired. Procedures are your contracts, types flow end to end, and authentication "just works".
