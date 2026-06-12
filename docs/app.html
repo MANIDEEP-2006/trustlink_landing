@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TrustLink App — Identity Verification</title>
+<meta name="description" content="TrustLink working demo app — register, verify identity documents with OCR, face matching, trust scoring and QR verification.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0' y1='0' x2='1' y2='1'%3E%3Cstop offset='0' stop-color='%233b82f6'/%3E%3Cstop offset='1' stop-color='%2306b6d4'/%3E%3C/linearGradient%3E%3C/defs%3E%3Crect width='100' height='100' rx='22' fill='url(%23g)'/%3E%3Cpath d='M50 18 L76 30 V52 C76 68 64 78 50 84 C36 78 24 68 24 52 V30 Z' fill='white'/%3E%3Cpath d='M40 52 L47 59 L62 42' stroke='%233b82f6' stroke-width='7' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/dist/face-api.js"></script>
+<style>
+:root{
+  --bg:#020617;--bg2:#0f172a;--blue:#3b82f6;--cyan:#06b6d4;--purple:#a855f7;
+  --green:#10b981;--red:#ef4444;--orange:#f97316;
+  --text:#e2e8f0;--muted:#94a3b8;--card:rgba(30,41,59,.6);--border:rgba(148,163,184,.18);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;overflow-x:hidden;}
+::selection{background:var(--blue);color:#fff;}
+::-webkit-scrollbar{width:8px;}::-webkit-scrollbar-track{background:var(--bg);}
+::-webkit-scrollbar-thumb{background:linear-gradient(var(--blue),var(--cyan));border-radius:8px;}
+.orb{position:fixed;border-radius:50%;filter:blur(90px);opacity:.18;pointer-events:none;z-index:0;}
+.orb.a{width:460px;height:460px;background:linear-gradient(90deg,#2563eb,#06b6d4);top:-80px;left:-110px;animation:dr1 10s ease-in-out infinite;}
+.orb.b{width:430px;height:430px;background:linear-gradient(90deg,#9333ea,#ec4899);bottom:-100px;right:-110px;animation:dr1 12s ease-in-out infinite reverse;}
+@keyframes dr1{0%,100%{transform:translate(0,0) scale(1);}50%{transform:translate(70px,40px) scale(1.15);}}
+.grid-bg{position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(148,163,184,.045) 1px,transparent 1px),linear-gradient(90deg,rgba(148,163,184,.045) 1px,transparent 1px);background-size:46px 46px;mask-image:radial-gradient(ellipse at center,black 30%,transparent 78%);}
+main{position:relative;z-index:2;max-width:980px;margin:0 auto;padding:24px 20px 80px;}
+
+/* top bar */
+.top{display:flex;justify-content:space-between;align-items:center;padding:14px 4px;margin-bottom:18px;}
+.logo{display:flex;align-items:center;gap:10px;font-size:19px;font-weight:800;}
+.logo .s{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--blue),var(--cyan));display:flex;align-items:center;justify-content:center;font-size:15px;}
+.logo span{background:linear-gradient(90deg,#60a5fa,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.top .acts{display:flex;gap:10px;align-items:center;}
+.userchip{background:rgba(59,130,246,.12);border:1px solid rgba(59,130,246,.35);color:#93c5fd;padding:8px 16px;border-radius:50px;font-size:13px;font-weight:700;}
+.btn{padding:12px 24px;border-radius:12px;font-weight:700;font-size:14px;border:none;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:.3s;text-decoration:none;}
+.btn-p{background:linear-gradient(120deg,var(--blue),var(--cyan));color:#fff;box-shadow:0 8px 24px rgba(37,99,235,.4);}
+.btn-p:hover{transform:translateY(-2px);box-shadow:0 12px 34px rgba(6,182,212,.45);}
+.btn-g{background:rgba(148,163,184,.1);border:1px solid var(--border);color:var(--text);}
+.btn-g:hover{border-color:var(--cyan);transform:translateY(-2px);}
+.btn-sm{padding:9px 16px;font-size:12.5px;border-radius:10px;}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none!important;}
+
+/* card */
+.card{background:var(--card);border:1px solid var(--border);border-radius:22px;padding:34px;backdrop-filter:blur(12px);box-shadow:0 24px 60px rgba(0,0,0,.45);animation:up .5s both;}
+@keyframes up{from{opacity:0;transform:translateY(26px);}to{opacity:1;transform:none;}}
+h1{font-size:clamp(24px,3.4vw,34px);font-weight:900;}
+h2{font-size:21px;margin-bottom:6px;}
+.grad{background:linear-gradient(90deg,#60a5fa,#22d3ee);-webkit-background-clip:text;background-clip:text;color:transparent;}
+.sub{color:var(--muted);font-size:14px;line-height:1.65;}
+label{display:block;font-size:12.5px;font-weight:700;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin:18px 0 7px;}
+input,select{width:100%;background:rgba(2,6,23,.6);border:1px solid var(--border);border-radius:12px;padding:13px 16px;color:var(--text);font-size:15px;outline:none;transition:.3s;font-family:inherit;}
+input:focus,select:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(59,130,246,.15);}
+input.err{border-color:var(--red);}
+.hint{font-size:12px;color:var(--muted);margin-top:6px;}
+.hint.bad{color:#fca5a5;}
+.hint.good{color:#6ee7b7;}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:600px){.row2{grid-template-columns:1fr;}}
+
+/* tabs */
+.tabs{display:flex;background:rgba(2,6,23,.5);border:1px solid var(--border);border-radius:13px;padding:5px;margin-bottom:24px;}
+.tab{flex:1;text-align:center;padding:11px;border-radius:9px;font-weight:700;font-size:14px;cursor:pointer;color:var(--muted);transition:.3s;}
+.tab.on{background:linear-gradient(120deg,var(--blue),var(--cyan));color:#fff;}
+
+/* stepper */
+.stepper{display:flex;align-items:center;margin:6px 0 30px;}
+.sdot{width:38px;height:38px;border-radius:50%;background:rgba(148,163,184,.12);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:var(--muted);transition:.4s;flex:none;}
+.sdot.on{background:linear-gradient(135deg,var(--blue),var(--cyan));color:#fff;border-color:transparent;box-shadow:0 0 18px rgba(37,99,235,.5);}
+.sdot.done{background:rgba(16,185,129,.2);border-color:rgba(16,185,129,.5);color:#6ee7b7;}
+.sline{flex:1;height:2px;background:var(--border);margin:0 8px;position:relative;overflow:hidden;}
+.sline i{position:absolute;inset:0;background:linear-gradient(90deg,var(--blue),var(--cyan));transform:scaleX(0);transform-origin:left;transition:.6s;}
+.sline.done i{transform:scaleX(1);}
+.slabels{display:flex;justify-content:space-between;font-size:10.5px;letter-spacing:1px;color:var(--muted);text-transform:uppercase;margin-bottom:26px;}
+
+/* upload zones */
+.uz{border:2px dashed var(--border);border-radius:16px;padding:26px;text-align:center;cursor:pointer;transition:.3s;position:relative;overflow:hidden;}
+.uz:hover{border-color:var(--blue);background:rgba(59,130,246,.05);}
+.uz.has{border-style:solid;border-color:rgba(16,185,129,.5);}
+.uz img,.uz video,.uz canvas{max-width:100%;max-height:220px;border-radius:10px;}
+.uz .ph{font-size:34px;margin-bottom:8px;}
+.uz p{color:var(--muted);font-size:13px;}
+.uz p b{color:var(--text);}
+
+/* progress / checks */
+.checkrow{display:flex;align-items:center;gap:13px;background:rgba(148,163,184,.05);border:1px solid var(--border);border-radius:13px;padding:13px 16px;margin-bottom:11px;opacity:.45;transition:.45s;}
+.checkrow.on{opacity:1;border-color:rgba(59,130,246,.45);}
+.checkrow.ok{opacity:1;border-color:rgba(16,185,129,.5);}
+.checkrow.bad{opacity:1;border-color:rgba(239,68,68,.5);}
+.checkrow .ic{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--blue),var(--cyan));display:flex;align-items:center;justify-content:center;font-size:16px;flex:none;}
+.checkrow .tx{flex:1;}
+.checkrow .tx b{display:block;font-size:13.5px;}
+.checkrow .tx span{font-size:11.5px;color:var(--muted);}
+.checkrow .st{font-size:16px;}
+.spin{width:17px;height:17px;border:2.5px solid rgba(148,163,184,.3);border-top-color:var(--cyan);border-radius:50%;animation:rot .8s linear infinite;display:inline-block;}
+@keyframes rot{to{transform:rotate(360deg);}}
+.pbar{height:8px;background:rgba(148,163,184,.12);border-radius:8px;overflow:hidden;margin:14px 0 4px;}
+.pbar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--blue),var(--cyan));border-radius:8px;transition:width .4s;}
+
+/* score ring */
+.bigring{width:170px;height:170px;position:relative;margin:0 auto;}
+.bigring svg{transform:rotate(-90deg);}
+.bigring .n{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+.bigring .n b{font-size:42px;font-weight:900;}
+.bigring .n span{font-size:10.5px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;}
+.verdict{text-align:center;font-size:19px;font-weight:800;margin:18px 0 4px;}
+.scorebreak{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:13px;margin:24px 0;}
+.sb{background:rgba(148,163,184,.06);border:1px solid var(--border);border-radius:14px;padding:16px;text-align:center;}
+.sb b{font-size:22px;font-weight:900;display:block;}
+.sb span{font-size:11px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;}
+.qrbox{display:flex;gap:26px;align-items:center;flex-wrap:wrap;justify-content:center;background:rgba(148,163,184,.05);border:1px solid var(--border);border-radius:18px;padding:26px;margin-top:24px;}
+.qrbox canvas{border-radius:12px;background:#fff;padding:8px;}
+.qrbox .qi{max-width:330px;}
+.qrbox .qi h3{margin-bottom:8px;}
+.qrbox .qi p{color:var(--muted);font-size:13.5px;line-height:1.65;}
+
+/* dashboard list */
+.vitem{display:flex;align-items:center;gap:15px;background:rgba(148,163,184,.05);border:1px solid var(--border);border-radius:15px;padding:16px 18px;margin-bottom:12px;transition:.3s;}
+.vitem:hover{border-color:rgba(59,130,246,.45);transform:translateX(4px);}
+.vitem .sc{width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:15px;flex:none;}
+.vitem .tx{flex:1;}
+.vitem .tx b{display:block;font-size:14.5px;}
+.vitem .tx span{font-size:12px;color:var(--muted);}
+.empty{text-align:center;padding:40px 20px;color:var(--muted);}
+.empty .e{font-size:44px;margin-bottom:12px;}
+
+.note{background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.35);border-radius:13px;padding:13px 16px;font-size:12.5px;color:#fdba74;line-height:1.6;margin-top:20px;}
+.note b{color:#fb923c;}
+.foot{text-align:center;color:var(--muted);font-size:12.5px;margin-top:34px;}
+.foot a{color:#60a5fa;font-weight:700;text-decoration:none;}
+.hide{display:none!important;}
+.navrow{display:flex;justify-content:space-between;gap:14px;margin-top:28px;}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#0f172a;border:1px solid rgba(59,130,246,.5);color:var(--text);padding:13px 22px;border-radius:13px;font-size:14px;font-weight:600;z-index:9999;transition:.4s;box-shadow:0 14px 40px rgba(0,0,0,.6);}
+.toast.show{transform:translateX(-50%) translateY(0);}
+video{transform:scaleX(-1);}
+</style>
+</head>
+<body>
+<div class="orb a"></div><div class="orb b"></div><div class="grid-bg"></div>
+<main>
+  <div class="top">
+    <div class="logo"><span class="s">🛡️</span>Trust<span>Link</span> <span style="font-size:10px;background:rgba(16,185,129,.15);border:1px solid rgba(16,185,129,.4);color:#6ee7b7;-webkit-text-fill-color:#6ee7b7;padding:3px 9px;border-radius:40px;letter-spacing:1px;">WORKING DEMO</span></div>
+    <div class="acts">
+      <span class="userchip hide" id="userChip"></span>
+      <a class="btn btn-g btn-sm" href="index.html">← Landing</a>
+      <button class="btn btn-g btn-sm hide" id="logoutBtn">Logout</button>
+    </div>
+  </div>
+
+  <!-- ============ AUTH ============ -->
+  <section id="scr-auth" class="card" style="max-width:480px;margin:30px auto;">
+    <h1>Welcome to <span class="grad">TrustLink</span></h1>
+    <p class="sub" style="margin-top:8px;">Create your account, verify your identity documents with AI, and get your trusted QR identity card.</p>
+    <div class="tabs" style="margin-top:24px;">
+      <div class="tab on" id="tabLogin">Login</div>
+      <div class="tab" id="tabReg">Create Account</div>
+    </div>
+    <!-- login -->
+    <div id="formLogin">
+      <label>Email</label>
+      <input type="email" id="liEmail" placeholder="you@example.com">
+      <label>Password</label>
+      <input type="password" id="liPass" placeholder="••••••••">
+      <p class="hint bad hide" id="liErr"></p>
+      <button class="btn btn-p" style="width:100%;justify-content:center;margin-top:24px;" id="loginBtn">🔓 Login</button>
+    </div>
+    <!-- register -->
+    <div id="formReg" class="hide">
+      <label>Full Name (as on your ID document)</label>
+      <input type="text" id="rgName" placeholder="e.g. SAI KIRAN MANIDEEP">
+      <div class="row2">
+        <div><label>Email</label><input type="email" id="rgEmail" placeholder="you@example.com"></div>
+        <div><label>Phone</label><input type="tel" id="rgPhone" placeholder="10-digit mobile" maxlength="10"></div>
+      </div>
+      <div class="row2">
+        <div><label>Create Password</label><input type="password" id="rgPass" placeholder="min 6 characters"></div>
+        <div><label>Confirm Password</label><input type="password" id="rgPass2" placeholder="repeat password"></div>
+      </div>
+      <p class="hint bad hide" id="rgErr"></p>
+      <button class="btn btn-p" style="width:100%;justify-content:center;margin-top:24px;" id="regBtn">✨ Create Account</button>
+    </div>
+    <div class="note">🔒 <b>Privacy:</b> this is a client-side demo — your account & images stay <b>in your browser only</b> (localStorage). Nothing is uploaded to any server. Please use <b>sample/test documents</b>, not real sensitive IDs.</div>
+  </section>
+
+  <!-- ============ DASHBOARD ============ -->
+  <section id="scr-dash" class="card hide">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;">
+      <div><h2 id="dashHello">Hello 👋</h2><p class="sub">Your identity verifications</p></div>
+      <button class="btn btn-p" id="newVerifBtn">➕ New Verification</button>
+    </div>
+    <div id="vList" style="margin-top:26px;"></div>
+  </section>
+
+  <!-- ============ WIZARD ============ -->
+  <section id="scr-wiz" class="card hide">
+    <div class="stepper">
+      <div class="sdot on" id="d1">1</div><div class="sline" id="l1"><i></i></div>
+      <div class="sdot" id="d2">2</div><div class="sline" id="l2"><i></i></div>
+      <div class="sdot" id="d3">3</div><div class="sline" id="l3"><i></i></div>
+      <div class="sdot" id="d4">4</div>
+    </div>
+    <div class="slabels"><span>Document</span><span>OCR Scan</span><span>Face Match</span><span>Trust Score</span></div>
+
+    <!-- STEP 1: document details -->
+    <div id="step1">
+      <h2>📄 Identity Document</h2>
+      <p class="sub">Choose your document, enter its number and upload a clear photo of it.</p>
+      <label>Document Type</label>
+      <select id="docType">
+        <option value="PAN">PAN Card</option>
+        <option value="AADHAAR">Aadhaar Card</option>
+        <option value="PASSPORT">Passport</option>
+      </select>
+      <label id="numLabel">PAN Number</label>
+      <input type="text" id="docNum" placeholder="ABCDE1234F" style="text-transform:uppercase;">
+      <p class="hint" id="numHint">Format: 5 letters + 4 digits + 1 letter</p>
+      <label>Upload Document Photo</label>
+      <div class="uz" id="docZone"><div class="ph">🪪</div><p><b>Click to upload</b> the document image<br>(clear, well-lit, all text readable)</p></div>
+      <input type="file" id="docFile" accept="image/*" class="hide">
+      <div class="navrow"><span></span><button class="btn btn-p" id="toStep2">Continue → OCR Scan</button></div>
+    </div>
+
+    <!-- STEP 2: OCR -->
+    <div id="step2" class="hide">
+      <h2>🔍 AI OCR Scanning</h2>
+      <p class="sub">Tesseract AI is reading your document in your browser — extracting text and matching it with your details.</p>
+      <div class="pbar"><i id="ocrBar"></i></div>
+      <p class="hint" id="ocrStatus">Initialising OCR engine…</p>
+      <div style="margin-top:18px;">
+        <div class="checkrow" id="ck-read"><div class="ic">📖</div><div class="tx"><b>Document Text Extraction</b><span>Reading all visible text via OCR</span></div><div class="st"><span class="spin"></span></div></div>
+        <div class="checkrow" id="ck-num"><div class="ic">🔢</div><div class="tx"><b>Document Number Match</b><span>Searching extracted text for your document number</span></div><div class="st">⏳</div></div>
+        <div class="checkrow" id="ck-name"><div class="ic">👤</div><div class="tx"><b>Name Match</b><span>Matching your registered name in the document</span></div><div class="st">⏳</div></div>
+        <div class="checkrow" id="ck-fmt"><div class="ic">✔️</div><div class="tx"><b>Number Format & Checksum</b><span>Validating official format rules</span></div><div class="st">⏳</div></div>
+      </div>
+      <div class="navrow"><button class="btn btn-g" id="back1">← Back</button><button class="btn btn-p" id="toStep3" disabled>Continue → Face Match</button></div>
+    </div>
+
+    <!-- STEP 3: selfie + face match -->
+    <div id="step3" class="hide">
+      <h2>🤳 Live Selfie & Face Match</h2>
+      <p class="sub">Capture a live selfie (or upload one). The AI compares your face with the photo on the document.</p>
+      <div class="row2" style="margin-top:18px;">
+        <div>
+          <label>Your Selfie</label>
+          <div class="uz" id="selZone"><div class="ph">📸</div><p><b>Tap to use camera</b><br>or drop/upload a selfie</p></div>
+          <input type="file" id="selFile" accept="image/*" class="hide">
+          <div style="display:flex;gap:10px;margin-top:10px;">
+            <button class="btn btn-g btn-sm" id="camBtn">🎥 Use Camera</button>
+            <button class="btn btn-g btn-sm" id="upBtn">📁 Upload File</button>
+            <button class="btn btn-p btn-sm hide" id="snapBtn">📸 Capture</button>
+          </div>
+        </div>
+        <div>
+          <label>Document Photo (for comparison)</label>
+          <div class="uz has" id="docPrev2" style="cursor:default;"></div>
+        </div>
+      </div>
+      <div style="margin-top:20px;">
+        <div class="checkrow" id="ck-faces"><div class="ic">🧠</div><div class="tx"><b>Face Detection</b><span>Locating faces in selfie & document</span></div><div class="st">⏳</div></div>
+        <div class="checkrow" id="ck-match"><div class="ic">🤝</div><div class="tx"><b>Biometric Similarity</b><span>Comparing 128-dimension face embeddings</span></div><div class="st">⏳</div></div>
+      </div>
+      <p class="hint" id="faceStatus"></p>
+      <div class="navrow"><button class="btn btn-g" id="back2">← Back</button><button class="btn btn-p" id="toStep4" disabled>Run Face Match →</button></div>
+    </div>
+
+    <!-- STEP 4: scoring -->
+    <div id="step4" class="hide">
+      <h2>📊 Calculating Trust Score</h2>
+      <p class="sub" id="calcSub">Weighing document integrity, OCR match and biometric confidence…</p>
+      <div style="margin:30px 0;">
+        <div class="bigring">
+          <svg width="170" height="170">
+            <circle cx="85" cy="85" r="72" stroke="rgba(148,163,184,.13)" stroke-width="13" fill="none"/>
+            <circle id="finArc" cx="85" cy="85" r="72" stroke="#10b981" stroke-width="13" fill="none" stroke-linecap="round" stroke-dasharray="452.4" stroke-dashoffset="452.4"/>
+          </svg>
+          <div class="n"><b id="finNum">0</b><span>Trust Score</span></div>
+        </div>
+        <div class="verdict" id="finVerdict"></div>
+        <p class="sub" style="text-align:center;" id="finDesc"></p>
+      </div>
+      <div class="scorebreak">
+        <div class="sb"><b id="sbFmt">–</b><span>Document Validity<br>(30)</span></div>
+        <div class="sb"><b id="sbOcr">–</b><span>OCR Match<br>(40)</span></div>
+        <div class="sb"><b id="sbFace">–</b><span>Face Match<br>(30)</span></div>
+      </div>
+      <div class="qrbox hide" id="qrBox">
+        <canvas id="qrCanvas"></canvas>
+        <div class="qi">
+          <h3>🪪 Your Verified QR Identity</h3>
+          <p>This QR contains your <b>signed verification report</b>. Scan it with any phone camera — it opens the full report page proving this identity was verified, with score breakdown & timestamp.</p>
+          <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
+            <button class="btn btn-p btn-sm" id="dlQr">⬇ Download QR</button>
+            <a class="btn btn-g btn-sm" id="openReport" target="_blank">📋 Open Report</a>
+          </div>
+        </div>
+      </div>
+      <div class="navrow"><button class="btn btn-g" id="againBtn">↻ New Verification</button><button class="btn btn-p" id="dashBtn">🏠 Dashboard</button></div>
+    </div>
+  </section>
+
+  <div class="foot">TrustLink working demo · built by <a href="https://manideep-2006.github.io/my-portfolio/" target="_blank">Sai Kiran Manideep</a> · <a href="https://github.com/MANIDEEP-2006/trustlink_landing" target="_blank">source code</a></div>
+</main>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ================= helpers ================= */
+const $=id=>document.getElementById(id);
+const show=el=>el.classList.remove('hide'), hide=el=>el.classList.add('hide');
+function toast(m){const t=$('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2600);}
+async function sha256(s){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');}
+const LSU='tl_users', LSS='tl_session';
+const getUsers=()=>JSON.parse(localStorage.getItem(LSU)||'{}');
+const saveUsers=u=>localStorage.setItem(LSU,JSON.stringify(u));
+const getSession=()=>localStorage.getItem(LSS);
+const verKey=e=>'tl_verifs_'+e;
+const getVerifs=e=>JSON.parse(localStorage.getItem(verKey(e))||'[]');
+const saveVerifs=(e,v)=>localStorage.setItem(verKey(e),JSON.stringify(v));
+function b64u(o){return btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');}
+
+/* ================= auth ================= */
+$('tabLogin').onclick=()=>{$('tabLogin').classList.add('on');$('tabReg').classList.remove('on');show($('formLogin'));hide($('formReg'));};
+$('tabReg').onclick=()=>{$('tabReg').classList.add('on');$('tabLogin').classList.remove('on');show($('formReg'));hide($('formLogin'));};
+
+$('regBtn').onclick=async()=>{
+  const name=$('rgName').value.trim().toUpperCase(), email=$('rgEmail').value.trim().toLowerCase(),
+        ph=$('rgPhone').value.trim(), p1=$('rgPass').value, p2=$('rgPass2').value, err=$('rgErr');
+  hide(err);
+  const bad=m=>{err.textContent=m;show(err);};
+  if(name.length<3)return bad('Enter your full name (min 3 chars).');
+  if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))return bad('Enter a valid email.');
+  if(!/^\d{10}$/.test(ph))return bad('Phone must be 10 digits.');
+  if(p1.length<6)return bad('Password must be at least 6 characters.');
+  if(p1!==p2)return bad('Passwords do not match.');
+  const users=getUsers();
+  if(users[email])return bad('Account already exists — please login.');
+  const salt=crypto.getRandomValues(new Uint8Array(8)).join('');
+  users[email]={name,phone:ph,salt,hash:await sha256(salt+p1),created:Date.now()};
+  saveUsers(users);localStorage.setItem(LSS,email);
+  toast('🎉 Account created!');route();
+};
+$('loginBtn').onclick=async()=>{
+  const email=$('liEmail').value.trim().toLowerCase(), p=$('liPass').value, err=$('liErr');hide(err);
+  const u=getUsers()[email];
+  if(!u||u.hash!==await sha256(u.salt+p)){err.textContent='Invalid email or password.';show(err);return;}
+  localStorage.setItem(LSS,email);toast('🔓 Welcome back!');route();
+};
+$('logoutBtn').onclick=()=>{localStorage.removeItem(LSS);route();};
+
+/* ================= routing ================= */
+function route(){
+  const e=getSession();
+  [['scr-auth'],['scr-dash'],['scr-wiz']].forEach(([i])=>hide($(i)));
+  if(!e){hide($('userChip'));hide($('logoutBtn'));show($('scr-auth'));return;}
+  const u=getUsers()[e];
+  $('userChip').textContent='👤 '+u.name.split(' ')[0];show($('userChip'));show($('logoutBtn'));
+  renderDash();show($('scr-dash'));
+}
+function renderDash(){
+  const e=getSession(),u=getUsers()[e];
+  $('dashHello').textContent='Hello, '+u.name.split(' ')[0]+' 👋';
+  const vs=getVerifs(e), L=$('vList');
+  if(!vs.length){L.innerHTML='<div class="empty"><div class="e">🪪</div>No verifications yet.<br>Start your first identity verification!</div>';return;}
+  L.innerHTML=vs.map((v,i)=>{
+    const c=v.score>=75?'#10b981':v.score>=50?'#f97316':'#ef4444';
+    return `<div class="vitem"><div class="sc" style="background:${c}22;border:2px solid ${c};color:${c};">${v.score}</div>
+    <div class="tx"><b>${v.doc} ····${v.last4}</b><span>${new Date(v.ts).toLocaleString()} · ${v.verdict}</span></div>
+    <a class="btn btn-g btn-sm" href="report.html#${v.payload}" target="_blank">📋 Report</a></div>`;
+  }).join('');
+}
+$('newVerifBtn').onclick=()=>{resetWizard();hide($('scr-dash'));show($('scr-wiz'));};
+$('dashBtn').onclick=()=>{renderDash();hide($('scr-wiz'));show($('scr-dash'));};
+$('againBtn').onclick=()=>resetWizard();
+
+/* ================= wizard state ================= */
+let S={};
+function resetWizard(){
+  S={docImg:null,selImg:null,ocrText:'',scores:{fmt:0,ocr:0,face:0},faceInfo:''};
+  gotoStep(1);
+  $('docNum').value='';$('docZone').innerHTML='<div class="ph">🪪</div><p><b>Click to upload</b> the document image<br>(clear, well-lit, all text readable)</p>';
+  $('docZone').classList.remove('has');
+  ['ck-read','ck-num','ck-name','ck-fmt','ck-faces','ck-match'].forEach(i=>{const c=$(i);c.className='checkrow';c.querySelector('.st').textContent='⏳';});
+  $('ck-read').querySelector('.st').innerHTML='<span class="spin"></span>';
+  $('toStep3').disabled=true;$('toStep4').disabled=true;
+  $('selZone').innerHTML='<div class="ph">📸</div><p><b>Tap to use camera</b><br>or drop/upload a selfie</p>';$('selZone').classList.remove('has');
+  hide($('qrBox'));hide($('snapBtn'));stopCam();
+  $('ocrBar').style.width='0';
+}
+function gotoStep(n){
+  [1,2,3,4].forEach(i=>{ (i===n?show:hide)($('step'+i));
+    $('d'+i).className='sdot'+(i<n?' done':i===n?' on':'');
+    if(i<4)$('l'+i).className='sline'+(i<n?' done':'');
+    if(i<n)$('d'+i).textContent='✓';else $('d'+i).textContent=i;
+  });
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+/* ================= step 1 : document ================= */
+const DOC={PAN:{lbl:'PAN Number',ph:'ABCDE1234F',hint:'Format: 5 letters + 4 digits + 1 letter',re:/^[A-Z]{5}[0-9]{4}[A-Z]$/},
+ AADHAAR:{lbl:'Aadhaar Number',ph:'12-digit number',hint:'Format: 12 digits (Verhoeff checksum gives bonus)',re:/^\d{12}$/},
+ PASSPORT:{lbl:'Passport Number',ph:'A1234567',hint:'Format: 1 letter + 7 digits',re:/^[A-Z][0-9]{7}$/}};
+$('docType').onchange=()=>{const d=DOC[$('docType').value];$('numLabel').textContent=d.lbl;$('docNum').placeholder=d.ph;$('numHint').textContent=d.hint;$('numHint').className='hint';};
+$('docNum').oninput=()=>{$('docNum').value=$('docNum').value.toUpperCase().replace(/\s/g,'');};
+$('docZone').onclick=()=>$('docFile').click();
+$('docFile').onchange=e=>{
+  const f=e.target.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=()=>{S.docImg=r.result;$('docZone').innerHTML='<img src="'+r.result+'">';$('docZone').classList.add('has');};
+  r.readAsDataURL(f);
+};
+/* Verhoeff checksum for Aadhaar */
+const vd=[[0,1,2,3,4,5,6,7,8,9],[1,2,3,4,0,6,7,8,9,5],[2,3,4,0,1,7,8,9,5,6],[3,4,0,1,2,8,9,5,6,7],[4,0,1,2,3,9,5,6,7,8],[5,9,8,7,6,0,4,3,2,1],[6,5,9,8,7,1,0,4,3,2],[7,6,5,9,8,2,1,0,4,3],[8,7,6,5,9,3,2,1,0,4],[9,8,7,6,5,4,3,2,1,0]];
+const vp=[[0,1,2,3,4,5,6,7,8,9],[1,5,7,6,2,8,3,0,9,4],[5,8,0,3,7,9,6,1,4,2],[8,9,1,6,0,4,3,5,2,7],[9,4,5,3,1,2,6,8,7,0],[4,2,8,6,5,7,3,9,0,1],[2,7,9,3,8,0,6,4,1,5],[7,0,4,6,9,1,3,2,5,8]];
+function verhoeff(num){let c=0;num.split('').reverse().forEach((d,i)=>{c=vd[c][vp[i%8][+d]];});return c===0;}
+
+$('toStep2').onclick=()=>{
+  const t=$('docType').value, n=$('docNum').value.trim(), d=DOC[t];
+  if(!d.re.test(n)){$('numHint').textContent='⚠ Invalid format. '+d.hint;$('numHint').className='hint bad';$('docNum').classList.add('err');return;}
+  $('docNum').classList.remove('err');
+  if(!S.docImg){toast('📎 Please upload the document photo');return;}
+  S.docType=t;S.docNum=n;
+  gotoStep(2);runOCR();
+};
+
+/* ================= step 2 : OCR ================= */
+async function runOCR(){
+  const bar=$('ocrBar'),st=$('ocrStatus');
+  const set=(id,ok,txt)=>{const c=$(id);c.className='checkrow '+(ok?'ok':'bad');c.querySelector('.st').textContent=ok?'✅':'❌';if(txt)c.querySelector('.tx span').textContent=txt;};
+  $('ck-read').className='checkrow on';
+  try{
+    st.textContent='Loading Tesseract AI (first run downloads ~3 MB)…';
+    const res=await Tesseract.recognize(S.docImg,'eng',{logger:m=>{
+      if(m.status==='recognizing text'){bar.style.width=(m.progress*100)+'%';st.textContent='Reading document… '+Math.round(m.progress*100)+'%';}
+      else st.textContent=m.status+'…';
+    }});
+    bar.style.width='100%';
+    S.ocrText=(res.data.text||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+    const rawText=(res.data.text||'').toUpperCase();
+    set('ck-read',S.ocrText.length>10,'Extracted '+S.ocrText.length+' characters');
+    /* number match : full or partial */
+    const num=S.docNum, last4=num.slice(-4);
+    const numFull=S.ocrText.includes(num);
+    const numPart=!numFull&&S.ocrText.includes(last4);
+    set('ck-num',numFull||numPart, numFull?'Exact document number found in OCR text':numPart?'Partial match (last digits) found':'Number not found in document text');
+    /* name match */
+    const uname=(getUsers()[getSession()].name||'').toUpperCase().split(/\s+/).filter(w=>w.length>2);
+    const hits=uname.filter(w=>rawText.includes(w)).length;
+    const nameOk=uname.length&&hits/uname.length>=0.5;
+    set('ck-name',nameOk, hits+'/'+uname.length+' name words matched');
+    /* format + checksum */
+    let fmtScore=25,fmtTxt='Format valid';
+    if(S.docType==='AADHAAR'){if(verhoeff(num)){fmtScore=30;fmtTxt='Format + Verhoeff checksum valid ✓';}else fmtTxt='Format valid (checksum not verified)';}
+    else fmtScore=30;
+    set('ck-fmt',true,fmtTxt);
+    /* scores */
+    S.scores.fmt=fmtScore;
+    S.scores.ocr=(numFull?25:numPart?15:0)+(nameOk?15:hits>0?7:0);
+    st.textContent='✅ OCR complete.';
+    $('toStep3').disabled=false;
+  }catch(err){
+    st.textContent='⚠ OCR engine failed to load ('+err.message+'). Scoring without OCR.';
+    set('ck-read',false,'OCR unavailable — check internet connection');
+    set('ck-num',false,'Skipped');set('ck-name',false,'Skipped');
+    S.scores.fmt=25;S.scores.ocr=0;
+    $('toStep3').disabled=false;
+  }
+}
+$('back1').onclick=()=>gotoStep(1);
+$('toStep3').onclick=()=>{gotoStep(3);$('docPrev2').innerHTML='<img src="'+S.docImg+'">';};
+
+/* ================= step 3 : selfie & face ================= */
+let camStream=null;
+function stopCam(){if(camStream){camStream.getTracks().forEach(t=>t.stop());camStream=null;}}
+$('upBtn').onclick=()=>$('selFile').click();
+$('selZone').onclick=()=>{if(!camStream&&!S.selImg)$('selFile').click();};
+$('selFile').onchange=e=>{
+  const f=e.target.files[0];if(!f)return;stopCam();hide($('snapBtn'));
+  const r=new FileReader();
+  r.onload=()=>{S.selImg=r.result;$('selZone').innerHTML='<img src="'+r.result+'">';$('selZone').classList.add('has');$('toStep4').disabled=false;};
+  r.readAsDataURL(f);
+};
+$('camBtn').onclick=async()=>{
+  try{
+    stopCam();
+    camStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'user'}});
+    const v=document.createElement('video');v.autoplay=true;v.playsInline=true;v.srcObject=camStream;
+    $('selZone').innerHTML='';$('selZone').appendChild(v);show($('snapBtn'));
+  }catch(e){toast('🎥 Camera blocked — upload a selfie instead');}
+};
+$('snapBtn').onclick=()=>{
+  const v=$('selZone').querySelector('video');if(!v)return;
+  const c=document.createElement('canvas');c.width=v.videoWidth;c.height=v.videoHeight;
+  const x=c.getContext('2d');x.translate(c.width,0);x.scale(-1,1);x.drawImage(v,0,0);
+  S.selImg=c.toDataURL('image/jpeg',.92);
+  stopCam();hide($('snapBtn'));
+  $('selZone').innerHTML='<img src="'+S.selImg+'">';$('selZone').classList.add('has');
+  $('toStep4').disabled=false;
+};
+$('back2').onclick=()=>{stopCam();gotoStep(2);};
+
+function loadImg(src){return new Promise((res,rej)=>{const i=new Image();i.onload=()=>res(i);i.onerror=rej;i.src=src;});}
+/* fallback similarity: 32x32 grayscale correlation */
+function histSim(a,b){
+  const g=img=>{const c=document.createElement('canvas');c.width=c.height=32;const x=c.getContext('2d');x.drawImage(img,0,0,32,32);
+    const d=x.getImageData(0,0,32,32).data,v=[];for(let i=0;i<d.length;i+=4)v.push((d[i]+d[i+1]+d[i+2])/3);return v;};
+  const va=g(a),vb=g(b),n=va.length;
+  const ma=va.reduce((s,x)=>s+x,0)/n, mb=vb.reduce((s,x)=>s+x,0)/n;
+  let num=0,da=0,db=0;
+  for(let i=0;i<n;i++){num+=(va[i]-ma)*(vb[i]-mb);da+=(va[i]-ma)**2;db+=(vb[i]-mb)**2;}
+  return Math.max(0,num/Math.sqrt(da*db||1));
+}
+let modelsReady=false,modelsTried=false;
+async function ensureModels(){
+  if(modelsReady||modelsTried)return modelsReady;
+  modelsTried=true;
+  try{
+    const U='https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.13/model';
+    await faceapi.nets.tinyFaceDetector.loadFromUri(U);
+    await faceapi.nets.faceLandmark68Net.loadFromUri(U);
+    await faceapi.nets.faceRecognitionNet.loadFromUri(U);
+    modelsReady=true;
+  }catch(e){modelsReady=false;}
+  return modelsReady;
+}
+$('toStep4').onclick=async()=>{
+  const b=$('toStep4');b.disabled=true;b.textContent='Analysing…';
+  const set=(id,ok,txt)=>{const c=$(id);c.className='checkrow '+(ok?'ok':'bad');c.querySelector('.st').textContent=ok?'✅':'❌';if(txt)c.querySelector('.tx span').textContent=txt;};
+  $('ck-faces').className='checkrow on';$('ck-faces').querySelector('.st').innerHTML='<span class="spin"></span>';
+  $('faceStatus').textContent='Loading face recognition neural network (first run ~6 MB)…';
+  let faceScore=0,info='';
+  try{
+    const [di,si]=await Promise.all([loadImg(S.docImg),loadImg(S.selImg)]);
+    if(await ensureModels()){
+      const opt=new faceapi.TinyFaceDetectorOptions({inputSize:416,scoreThreshold:.3});
+      $('faceStatus').textContent='Detecting faces…';
+      const [fd,fs]=await Promise.all([
+        faceapi.detectSingleFace(di,opt).withFaceLandmarks().withFaceDescriptor(),
+        faceapi.detectSingleFace(si,opt).withFaceLandmarks().withFaceDescriptor()
+      ]);
+      if(fd&&fs){
+        set('ck-faces',true,'Faces detected in both images');
+        const dist=faceapi.euclideanDistance(fd.descriptor,fs.descriptor);
+        const sim=Math.max(0,Math.min(1,(0.75-dist)/0.45));
+        faceScore=Math.round(sim*30);
+        const pct=Math.round(sim*100);
+        info='AI similarity '+pct+'% (distance '+dist.toFixed(2)+')';
+        set('ck-match',dist<0.6,info+(dist<0.6?' — MATCH':' — NO MATCH'));
+      }else{
+        set('ck-faces',false,(fd?'':'No face found in document. ')+(fs?'':'No face found in selfie.'));
+        const sim=histSim(di,si);faceScore=Math.round(sim*14);
+        info='Fallback image similarity '+Math.round(sim*100)+'%';
+        set('ck-match',false,info);
+      }
+    }else{
+      const sim=histSim(di,si);faceScore=Math.round(sim*16);
+      info='Neural net unavailable — fallback similarity '+Math.round(sim*100)+'%';
+      set('ck-faces',true,'Basic comparison mode');
+      set('ck-match',sim>0.5,info);
+    }
+  }catch(e){info='Face analysis error: '+e.message;set('ck-faces',false,info);}
+  S.scores.face=faceScore;S.faceInfo=info;
+  $('faceStatus').textContent='✅ Face analysis done — '+info;
+  b.textContent='Run Face Match →';
+  setTimeout(()=>{gotoStep(4);finish();},900);
+};
+
+/* ================= step 4 : score + QR ================= */
+async function finish(){
+  const {fmt,ocr,face}=S.scores;
+  const total=Math.min(100,fmt+ocr+face);
+  $('sbFmt').textContent=fmt+'/30';$('sbOcr').textContent=ocr+'/40';$('sbFace').textContent=face+'/30';
+  const col=total>=75?'#10b981':total>=50?'#f97316':'#ef4444';
+  const verdict=total>=75?'HIGH TRUST ✅':total>=50?'MEDIUM TRUST ⚠️':'LOW TRUST ❌';
+  const desc=total>=75?'Identity strongly verified across document, OCR and biometric checks.':
+        total>=50?'Partially verified — some checks could not be fully confirmed.':
+        'Verification failed — document or biometric checks did not match.';
+  const arc=$('finArc');arc.style.stroke=col;
+  setTimeout(()=>{arc.style.transition='stroke-dashoffset 1.6s cubic-bezier(.2,.7,.3,1)';arc.style.strokeDashoffset=452.4-(452.4*total/100);},150);
+  const t0=performance.now();
+  (function tk(t){const p=Math.min(1,(t-t0)/1600);$('finNum').textContent=Math.round(total*(1-Math.pow(1-p,3)));$('finNum').style.color=col;if(p<1)requestAnimationFrame(tk);})(t0);
+  $('finVerdict').textContent=verdict;$('finVerdict').style.color=col;
+  $('finDesc').textContent=desc;
+  /* signed payload */
+  const e=getSession(),u=getUsers()[e];
+  const id='TL-'+Date.now().toString(36).toUpperCase();
+  const core={v:1,id,name:u.name,doc:S.docType,last4:S.docNum.slice(-4),score:total,
+    parts:{doc:fmt,ocr:ocr,face:face},verdict:verdict.replace(/[^A-Z ]/g,'').trim(),
+    face:S.faceInfo,ts:Date.now()};
+  core.sig=(await sha256(JSON.stringify([core.id,core.name,core.score,core.ts])+'TLDEMO')).slice(0,16);
+  const payload=b64u(core);
+  const reportUrl=location.href.replace(/app\.html.*$/,'report.html')+'#'+payload;
+  new QRious({element:$('qrCanvas'),value:reportUrl,size:230,level:'M',background:'#ffffff',foreground:'#0f172a'});
+  show($('qrBox'));
+  $('openReport').href=reportUrl;
+  $('dlQr').onclick=()=>{const a=document.createElement('a');a.download='trustlink-qr-'+id+'.png';a.href=$('qrCanvas').toDataURL();a.click();};
+  /* save */
+  const vs=getVerifs(e);
+  vs.unshift({id,doc:S.docType,last4:S.docNum.slice(-4),score:total,verdict:verdict.replace(/[^A-Z ]/g,'').trim(),ts:Date.now(),payload});
+  saveVerifs(e,vs);
+  toast('🪪 Verification saved — score '+total+'/100');
+}
+
+route();
+</script>
+</body>
+</html>
